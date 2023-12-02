@@ -36,13 +36,13 @@ impl World {
         self.entities.contains(entity)
     }
 
-    fn register_pool<T: ComponentTrait + 'static>(&mut self) -> Option<&ComponentPool<T>> {
+    pub fn register_pool<T: ComponentTrait + 'static>(&mut self) -> Option<&mut ComponentPool<T>> {
         if !self.pools.contains_key(&T::id()) {
             let pool: ComponentPool<T> = ComponentPool::new();
 
             self.pools.insert(T::id(), Box::new(pool));
         }
 
-        return self.pools.get(&T::id()).unwrap().as_any().downcast_ref::<ComponentPool<T>>();
+        return self.pools.get_mut(&T::id()).unwrap().as_any().downcast_mut::<ComponentPool<T>>();
     }
 }
