@@ -1,18 +1,34 @@
+use std::any::Any;
+use std::collections::HashMap;
+
+use crate::entity::Entity;
+
 pub use ecs_macros::Component;
 
-use std::any::Any;
+pub trait ComponentTrait {
+    fn id() -> u64 where Self: Sized;
+}
 
-pub trait ToAny: 'static {
+pub trait AnyComponentPool {
     fn as_any(&self) -> &dyn Any;
 }
 
-impl<T: 'static> ToAny for T {
-    fn as_any(&self) -> &dyn Any {
-        self
+pub struct ComponentPool<T>
+    where T: ComponentTrait {
+    pub components: Vec<Box<T>>
+
+}
+
+impl<T: ComponentTrait> ComponentPool<T> {
+    pub fn new() -> Self {
+        Self {
+            components: Vec::new()
+        }
     }
 }
 
-
-pub trait ComponentTrait: ToAny {
-    fn id() -> u64;
+impl<T: ComponentTrait + 'static> AnyComponentPool for ComponentPool<T> {
+    fn as_any(&self) -> &dyn Any {
+        self as &dyn Any
+    }
 }

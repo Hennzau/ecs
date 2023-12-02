@@ -1,9 +1,17 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::entity::Entity;
+use crate::{
+    entity::Entity,
+    component::{
+        ComponentTrait,
+        AnyComponentPool,
+        ComponentPool,
+    }
+};
 
 pub struct World {
     entities: HashSet<Entity>,
+    pools: HashMap<u64, Box<dyn AnyComponentPool>>,
 
     next: u64
 }
@@ -12,6 +20,7 @@ impl World {
     pub fn new() -> Self {
         Self {
             entities: HashSet::new(),
+            pools: HashMap::new(),
             next: 0
         }
     }
@@ -25,5 +34,15 @@ impl World {
 
     pub fn alive(&self, entity: &Entity) -> bool {
         self.entities.contains(entity)
+    }
+
+    fn register_pool<T: ComponentTrait + 'static>(&mut self) -> Option<&ComponentPool<T>> {
+        if !self.pools.contains_key(&T::id()) {
+            let pool: ComponentPool<T> = ComponentPool::new();
+
+            self.pools.insert(T::id(), Box::new(pool));
+        }
+
+        return self.pools.get(&T::id()).unwrap().as_any().downcast_ref::<ComponentPool<T>>();
     }
 }
