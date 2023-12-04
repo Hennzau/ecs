@@ -1,76 +1,126 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::ops::DerefMut;
 
 use crate::entity::Entity;
 
 pub use ecs_macros::Component;
 
-// Trait needed for creating a Component (note: the user doesn't have to manipulate this trait
-// everything is included in the macro "derive(Component)"
+/*
+    Trait needed for creating a Component (note: the user doesn't have to manipulate this trait
+    everything is included in the macro "derive(Component)"
+*/
 
 pub trait ComponentTrait {
     fn id() -> u64 where Self: Sized;
 }
 
-// Components pools are distinguished by the type of their components
-// This is the global trait to recognized a pool
+/*
+    Components pools are distinguished by the type of their components
+    This is the global trait to recognized a pool and use it without the need to know the type
+    of the pool
+*/
 
 pub trait AnyComponentPool {
+    /*
+        Gives the possibility to downcast a Component Pool
+    */
+
     fn as_any(&mut self) -> &mut dyn Any;
+
+    /*
+        Check if the Component Pool contains a component for this entity
+    */
+
+    fn contains(&self, entity: &Entity) -> bool;
+
+    /*
+        Remove a component from this Component Pool and keep the Vec packed
+    */
+
+    fn swap(&mut self, a: &Entity, b: &Entity);
+    fn remove_component(&mut self, entity: &Entity);
 }
 
 pub struct ComponentPool<T>
     where T: ComponentTrait {
-    /*
-    sparse      : [x |x |x |0 | ...] <-- sparse index that refers to packed and components
-    packed      : [e3|e7|e8|e6] <-- entities
-    components  : [A0|A1|A2|A3] <-- components
-     */
-
-    pub sparse: Vec<usize>,
-    pub packed: Vec<Entity>,
-    pub components: Vec<Box<T>>,
+    map: HashMap<Entity, usize>,
+    components: Vec<Box<T>>,
 }
 
-// Impl the AnyComponent Trait for all ComponentPool<T>
+/*
+    Impl the AnyComponent Trait for all ComponentPool<T>
+*/
 
 impl<T: ComponentTrait + 'static> AnyComponentPool for ComponentPool<T> {
     fn as_any(&mut self) -> &mut dyn Any {
         self as &mut dyn Any
     }
+
+    fn contains(&self, entity: &Entity) -> bool {
+        self.map.contains_key(entity)
+    }
+
+    /*
+
+    To remove a component, in order to keep a packed Vec of components, you may need to swap the component
+    with the last component stored and pop the vector
+
+    */
+
+    fn swap(&mut self, a: &Entity, b: &Entity) {
+        if self.contains(a) && self.contains(b) {
+            // Now we are sure that the Component Pool contains everything you need to swap
+
+            let index_a = *self.map.get(a).unwrap();
+            let index_b = *self.map.get(b).unwrap();
+
+            self.components.swap(index_a, index_b);
+
+            self.map.entry(*a).or_insert(index_b);
+            self.map.entry(*b).or_insert(index_a);
+        }
+    }
+
+    fn remove_component(&mut self, entity: &Entity) {
+        if self.contains(entity) {
+            let last_index = self.components.len() - 1;
+
+            let last_entity = *self.map.iter().find_map(
+                |(key, &val)|
+                    if val == last_index { Some(key) } else { None }
+            ).unwrap(); // We are sure that there is such an entity associated with this value by construction
+
+            self.swap(&last_entity, entity);
+
+            self.map.remove(entity);
+            self.components.pop();
+        }
+    }
 }
 
-impl<T: ComponentTrait> ComponentPool<T> {
-    const ENTITY_THOMB: usize = usize::MAX;
-    // Tombstone
+/*
+    Every function that can not be in the trait definition because you need to know T
+*/
 
+impl<T: ComponentTrait + 'static> ComponentPool<T> {
     pub fn new() -> Self {
         Self {
-            sparse: Vec::new(),
-            packed: Vec::new(),
+            map: HashMap::new(),
             components: Vec::new(),
         }
     }
 
-    fn as_sparse(&self, entity: &Entity) -> usize {
-        (*entity) as usize
-    }
+    /*
+        Try to get the component of a certain entity. None if this entity doesn't have T component
+    */
 
-    fn as_index(&self, entity: &Entity) -> usize {
-        match self.sparse.get(self.as_sparse(entity)) {
-            Some(i) => *i,
-            None => Self::ENTITY_THOMB
-        }
-    }
-
-    pub fn contains(&self, entity: &Entity) -> bool {
-        self.as_sparse(entity) < self.sparse.len() && self.as_index(entity) != Self::ENTITY_THOMB
-    }
-
-    pub fn get_component(&mut self, entity: &Entity) -> Option<&mut T> {
+    pub fn try_get_component(&mut self, entity: &Entity) -> Option<&mut T> {
         return match self.contains(entity) {
             true => {
-                let index = self.as_index(entity);
+                // Now we are sure that the Component Pool has a component associated with 'entity'
+
+                let index = *self.map.get(entity).unwrap();
 
                 Some(self.components.get_mut(index).unwrap().deref_mut())
             }
@@ -80,52 +130,20 @@ impl<T: ComponentTrait> ComponentPool<T> {
         };
     }
 
-    pub fn add_component_or_retrieve(&mut self, entity: &Entity, value: T) -> &mut T {
+    /*
+        Try to generate a component from the Component Pool, associated with this entity :
+        if this entity already has a component from this pool, return it
+    */
+
+    pub fn add_or_get_component(&mut self, entity: &Entity, value: T) -> &mut T {
         if !self.contains(entity) {
             let index = self.components.len();
             self.components.push(Box::new(value));
-            self.packed.push(*entity);
 
-            let sparse = self.as_sparse(entity);
-
-            if sparse >= self.sparse.len() {
-                self.sparse.resize(sparse + 1, Self::ENTITY_THOMB);
-            }
-
-            self.sparse[sparse] = index;
+            self.map.insert(*entity, index);
         }
 
-        self.get_component(entity).unwrap()
-    }
-
-    pub fn swap(&mut self, a: &Entity, b: &Entity) {
-        let sparse_a = self.as_sparse(a);
-        let sparse_b = self.as_sparse(b);
-        let index_a = self.as_index(a);
-        let index_b = self.as_index(b);
-
-        if index_a != Self::ENTITY_THOMB as usize && index_b != Self::ENTITY_THOMB as usize {
-            self.components.swap(index_a, index_b);
-            self.packed.swap(index_a, index_b);
-
-            self.sparse[sparse_a] = index_b;
-            self.sparse[sparse_b] = index_a;
-        }
-    }
-
-    pub fn remove(&mut self, entity: &Entity) {
-        let sparse = self.as_sparse(entity);
-        let index = self.as_index(entity);
-
-        if index != Self::ENTITY_THOMB {
-            let last_entity = *self.packed.last().unwrap();
-
-            self.swap(&last_entity, entity);
-
-            self.sparse[sparse] = Self::ENTITY_THOMB;
-
-            self.packed.pop();
-            self.components.pop();
-        }
+        // Now we are sure that 'entity' has T component
+        self.try_get_component(entity).unwrap()
     }
 }
