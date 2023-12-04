@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::{
     entity::Entity,
@@ -59,14 +59,14 @@ impl World {
         }
     }
 
-    fn register_pool_or_retrieve<T: ComponentTrait + 'static>(&mut self) -> Option<&mut ComponentPool<T>> {
+    fn register_pool_or_retrieve<T: ComponentTrait + 'static>(&mut self) -> &mut ComponentPool<T> {
         if !self.pools.contains_key(&T::id()) {
             let pool: ComponentPool<T> = ComponentPool::new();
 
             self.pools.insert(T::id(), Box::new(pool));
         }
 
-        return self.pools.get_mut(&T::id()).unwrap().as_any().downcast_mut::<ComponentPool<T>>();
+        return self.pools.get_mut(&T::id()).unwrap().as_any().downcast_mut::<ComponentPool<T>>().unwrap();
     }
 
     pub fn add_component<T: ComponentTrait + 'static>(&mut self, entity: &Entity, value: T) -> Option<&mut T> {
@@ -81,12 +81,18 @@ impl World {
             components.push(id);
         }
 
-        let pool = self.register_pool_or_retrieve::<T>().unwrap();
+        let pool = self.register_pool_or_retrieve::<T>();
 
         return Some(pool.add_component_or_retrieve(entity, value));
     }
 
     pub fn get_component<T: ComponentTrait + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
-        None
+        if !self.pools.contains_key(&T::id()) {
+            return None;
+        }
+
+        let pool = self.register_pool_or_retrieve::<T>();
+
+        return pool.get_component(entity);
     }
 }

@@ -1,11 +1,9 @@
 use std::any::Any;
-use std::collections::HashMap;
 use std::ops::DerefMut;
 
 use crate::entity::Entity;
 
 pub use ecs_macros::Component;
-use crate::entity;
 
 // Trait needed for creating a Component (note: the user doesn't have to manipulate this trait
 // everything is included in the macro "derive(Component)"
@@ -121,7 +119,6 @@ impl<T: ComponentTrait> ComponentPool<T> {
 
         if index != Self::ENTITY_THOMB {
             let last_entity = *self.packed.last().unwrap();
-            let last_sparse = self.as_sparse(&last_entity);
 
             self.swap(&last_entity, entity);
 
