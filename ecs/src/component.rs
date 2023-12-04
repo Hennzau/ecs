@@ -69,20 +69,20 @@ impl<T: ComponentTrait> ComponentPool<T> {
         self.as_sparse(entity) < self.sparse.len() && self.as_index(entity) != Self::ENTITY_THOMB
     }
 
-    pub fn component(&mut self, entity: &Entity) -> Option<&mut T> {
+    pub fn get_component(&mut self, entity: &Entity) -> Option<&mut T> {
         return match self.contains(entity) {
             true => {
                 let index = self.as_index(entity);
 
                 Some(self.components.get_mut(index).unwrap().deref_mut())
-            },
+            }
             false => {
                 None
             }
         };
     }
 
-    pub fn create_or_retrieve(&mut self, entity: &Entity, value: T) -> &mut T {
+    pub fn add_component_or_retrieve(&mut self, entity: &Entity, value: T) -> &mut T {
         if !self.contains(entity) {
             let index = self.components.len();
             self.components.push(Box::new(value));
@@ -97,7 +97,7 @@ impl<T: ComponentTrait> ComponentPool<T> {
             self.sparse[sparse] = index;
         }
 
-        self.component(entity).unwrap()
+        self.get_component(entity).unwrap()
     }
 
     pub fn swap(&mut self, a: &Entity, b: &Entity) {
