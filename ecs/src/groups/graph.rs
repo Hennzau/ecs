@@ -1,91 +1,122 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
-pub struct Graph {
-    // Key = Vertex, Value = Neighbours
-    pub vertices: HashMap<i128, Vec<i128>>, // len p
+pub struct BipartiteGroupsGraph {
+    // First layer of the bipartite graph and its calculated vertex of the second layer
+    pub layer_one: HashMap<i128, Option<i128>>,
+    // Second layer of the bipartite graph and its calculated vertex of the first layer
+    pub layer_two: HashMap<i128, Option<i128>>,
 
-    // edge A -> B with capacity (C (0 or 1), and flow D)
-    pub edges: HashMap<(i128, i128), (u8, u8)>, // len q
+    // Neighbours from layer two, of the layer one
+    pub layer_one_neighbours: HashMap<i128, Vec<i128>>,
+
+    // Distances
+    pub distances: HashMap<i128, Option<u32>>
 }
 
-pub struct Residual {
-    pub vertices: HashMap<i128, Vec<i128>>,
-    pub edges: HashMap<(i128, i128), u8>,
-}
-
-impl Graph {
+impl BipartiteGroupsGraph {
     pub fn new() -> Self {
         Self {
-            vertices: HashMap::new(),
-            edges: HashMap::new(),
+            layer_one: HashMap::new(),
+            layer_two: HashMap::new(),
+            layer_one_neighbours: HashMap::new(),
+            distances: HashMap::new()
         }
     }
 
-    pub fn add_vertex(&mut self, value: i128) {
-        self.vertices.insert(value, Vec::new());
+    // Add an edge for the bipartite graph (from the layer one and the layer two)
+    pub fn add_edge(&mut self, a: i128, b: i128) {
+        if !self.layer_one_neighbours.contains_key(&a) {
+            self.layer_one_neighbours.insert(a, Vec::new());
+        }
+
+        self.layer_one_neighbours.get_mut(&a).unwrap().push(b);
     }
 
-    pub fn add_edge(&mut self, a: i128, b: i128, c: bool) {
-        match self.vertices.get_mut(&a) {
-            Some(neighbours) => {
-                neighbours.push(b);
+    // BFS algorithm that computes distances of the graph
 
-                if !self.edges.contains_key(&(a, b)) {
-                    if c {
-                        self.edges.insert((a, b), (1, 0));
-                    } else {
-                        self.edges.insert((a, b), (0, 0));
+    fn compute_distances(&mut self) -> u32 {
+        let mut queue = VecDeque::<i128>::new();
+
+        for (&vertex, pair) in &self.layer_one {
+            if pair.is_none() {
+                *self.distances.get_mut(&vertex).unwrap() = Some(0);
+
+                queue.push_back(vertex);
+            } else {
+                *self.distances.get_mut(&vertex).unwrap() = None;
+            }
+        }
+
+        let mut nil = u32::MAX;
+        while !queue.is_empty() {
+            let vertex = queue.pop_front().unwrap();
+
+            if self.distances.get(&vertex).unwrap().is_some_and(|x| x < nil) {
+                for paired in self.layer_one_neighbours.get(&vertex).unwrap() {
+                    match self.layer_two.get(&paired).unwrap() {
+                        Some(v) => {
+                            if self.distances.get(v).unwrap().is_none() {
+                                *self.distances.get_mut(v).unwrap() = Some(self.distances.get(&vertex).unwrap().unwrap() + 1);
+
+                                queue.push_back(*v);
+                            }
+                        },
+                        None => {
+                            if nil == u32::MAX {
+                                nil = self.distances.get(&vertex).unwrap().unwrap() + 1;
+                            }
+                        }
                     }
                 }
             }
-            None => {}
         }
+
+        return nil;
     }
 
-    pub fn update_capacity(&mut self, a: i128, b: i128, c: bool) {
-        let edge = self.edges.get_mut(&(a, b));
-        if edge.is_some() {
-            if c {
-                *edge.unwrap() = (1, 0);
-            } else {
-                *edge.unwrap() = (0, 0);
+    // DFS algorithm that computes the matching
+
+    fn compute_matching(&mut self, vertex: Option<i128>, dist_nil: u32) -> bool {
+        if vertex.is_some() {
+            for &paired in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap() {
+                match self.layer_two.get(&paired).unwrap() {
+                    Some(v) => {},
+                    None => {
+                        match self.distances.get(&vertex.unwrap()).unwrap() {
+                            Some(u) => {},
+                            None => {
+                                if dist_nil == u32::MAX {
+                                    *self.layer_one.get_mut(&vertex.unwrap()).unwrap() = Some(paired);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    pub fn compute(&mut self) {
+        for (&vertex, neighbours) in &self.layer_one_neighbours {
+            self.layer_one.insert(vertex, None);
+            self.layer_two.insert(-vertex, None);
+            self.distances.insert(vertex, None);
+            self.distances.insert(-vertex, None);
+        }
+
+        loop {
+            let dist_nil = self.compute_distances();
+            if dist_nil == u32::MAX {
+                break;
+            }
+
+            for (vertex, paired) in self.layer_one.clone() {
+                if paired.is_none() {
+                    self.compute_matching(Some(vertex), dist_nil);
+                }
             }
         }
     }
-
-    pub fn construct_residual(&self) -> Residual {
-        let mut residual = Residual::new();
-
-        for ((a, b), (c, f)) in self.edges {
-            if !residual.vertices.contains_key(a) {
-                residual.vertices.insert(a, Vec::new());
-            }
-
-            if !residual.vertices.contains_key(b) {
-                residual.vertices.insert(b, Vec::new());
-            }
-
-            if c == 1 && f == 0 {
-                residual.vertices.get_mut(a).unwrap().push(b);
-                residual.edges.insert((a, b), c);
-                v
-            } else if c == 1 && f == 1 {
-                residual.vertices.get_mut(b).unwrap().push(a);
-                residual.edges.insert((b, a), c);
-            }
-        }
-
-        return residual;
-    }   // O(q)
-}
-
-impl Residual {
-    pub fn new() -> Self {
-        Self {
-            vertices: HashMap::new(),
-            edges: HashMap::new(),
-        }
-    }
-
-
 }
