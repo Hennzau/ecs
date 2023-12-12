@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 pub struct BipartiteGroupsGraph {
     // First layer of the bipartite graph and its calculated vertex of the second layer
     pub layer_one: HashMap<i128, Option<i128>>,
+
     // Second layer of the bipartite graph and its calculated vertex of the first layer
     pub layer_two: HashMap<i128, Option<i128>>,
 
@@ -10,7 +11,7 @@ pub struct BipartiteGroupsGraph {
     pub layer_one_neighbours: HashMap<i128, Vec<i128>>,
 
     // Distances
-    pub distances: HashMap<i128, Option<u32>>
+    pub distances: HashMap<Option<i128>, u32>,
 }
 
 impl BipartiteGroupsGraph {
@@ -19,7 +20,7 @@ impl BipartiteGroupsGraph {
             layer_one: HashMap::new(),
             layer_two: HashMap::new(),
             layer_one_neighbours: HashMap::new(),
-            distances: HashMap::new()
+            distances: HashMap::new(),
         }
     }
 
@@ -30,91 +31,99 @@ impl BipartiteGroupsGraph {
         }
 
         self.layer_one_neighbours.get_mut(&a).unwrap().push(b);
+
+        if !self.layer_one.contains_key(&a) {
+            self.layer_one.insert(a, None);
+            self.distances.insert(Some(a), u32::MAX);
+        }
+
+        if !self.layer_two.contains_key(&b) {
+            self.layer_two.insert(b, None);
+            self.distances.insert(Some(b), u32::MAX);
+        }
     }
 
     // BFS algorithm that computes distances of the graph
 
-    fn compute_distances(&mut self) -> u32 {
-        let mut queue = VecDeque::<i128>::new();
+    fn compute_distances(&mut self) -> bool {
+        let mut queue = VecDeque::<Option<i128>>::new();
 
-        for (&vertex, pair) in &self.layer_one {
+        for (vertex, pair) in self.layer_one.clone() {
             if pair.is_none() {
-                *self.distances.get_mut(&vertex).unwrap() = Some(0);
+                *self.distances.get_mut(&Some(vertex)).unwrap() = 0;
 
-                queue.push_back(vertex);
+                queue.push_back(Some(vertex));
             } else {
-                *self.distances.get_mut(&vertex).unwrap() = None;
+                *self.distances.get_mut(&Some(vertex)).unwrap() = u32::MAX;
             }
         }
 
-        let mut nil = u32::MAX;
+        *self.distances.get_mut(&None).unwrap() = u32::MAX;
+
         while !queue.is_empty() {
             let vertex = queue.pop_front().unwrap();
 
-            if self.distances.get(&vertex).unwrap().is_some_and(|x| x < nil) {
-                for paired in self.layer_one_neighbours.get(&vertex).unwrap() {
-                    match self.layer_two.get(&paired).unwrap() {
-                        Some(v) => {
-                            if self.distances.get(v).unwrap().is_none() {
-                                *self.distances.get_mut(v).unwrap() = Some(self.distances.get(&vertex).unwrap().unwrap() + 1);
-
-                                queue.push_back(*v);
-                            }
-                        },
-                        None => {
-                            if nil == u32::MAX {
-                                nil = self.distances.get(&vertex).unwrap().unwrap() + 1;
-                            }
-                        }
+            let dist_u = self.distances.get(&vertex).unwrap().clone();
+            if dist_u < self.distances.get(&None).unwrap().clone() {
+                // if vertex was None we would not be there
+                for v in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap().clone() {
+                    let pair_v = self.layer_two.get(&v).unwrap();
+                    let mut dist_pair_v = self.distances.get_mut(pair_v).unwrap();
+                    if dist_pair_v.clone() == u32::MAX {
+                        *dist_pair_v = dist_u + 1;
+                        queue.push_back(*pair_v);
                     }
                 }
             }
         }
 
-        return nil;
+        return self.distances.get(&None).unwrap().clone() < u32::MAX;
     }
 
-    // DFS algorithm that computes the matching
+    fn compute_matching(&mut self, vertex: Option<i128>) -> bool {
+        if !vertex.is_none() {
+            for v in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap().clone() {
+                let pair_v = self.layer_two.get_mut(&v).unwrap().clone();
+                if self.distances.get(&vertex).unwrap().clone() == u32::MAX {
+                    if self.distances.get(&pair_v).unwrap().clone() == u32::MAX {
+                        if self.compute_matching(pair_v) {
+                            *self.layer_two.get_mut(&v).unwrap() = vertex;
+                            *self.layer_one.get_mut(&vertex.unwrap()).unwrap() = Some(v.clone());
 
-    fn compute_matching(&mut self, vertex: Option<i128>, dist_nil: u32) -> bool {
-        if vertex.is_some() {
-            for &paired in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap() {
-                match self.layer_two.get(&paired).unwrap() {
-                    Some(v) => {},
-                    None => {
-                        match self.distances.get(&vertex.unwrap()).unwrap() {
-                            Some(u) => {},
-                            None => {
-                                if dist_nil == u32::MAX {
-                                    *self.layer_one.get_mut(&vertex.unwrap()).unwrap() = Some(paired);
-                                }
-                            }
+                            return true;
+                        }
+                    }
+                } else {
+                    if self.distances.get(&pair_v).unwrap().clone() == self.distances.get(&vertex).unwrap().clone() + 1 {
+                        if self.compute_matching(pair_v) {
+                            *self.layer_two.get_mut(&v).unwrap() = vertex;
+                            *self.layer_one.get_mut(&vertex.unwrap()).unwrap() = Some(v.clone());
+
+                            return true;
                         }
                     }
                 }
             }
+
+            *self.distances.get_mut(&vertex).unwrap() = u32::MAX;
+            return false;
         }
 
         return true;
     }
 
     pub fn compute(&mut self) {
-        for (&vertex, neighbours) in &self.layer_one_neighbours {
-            self.layer_one.insert(vertex, None);
-            self.layer_two.insert(-vertex, None);
-            self.distances.insert(vertex, None);
-            self.distances.insert(-vertex, None);
-        }
+        self.distances.insert(None, u32::MAX);
 
         loop {
             let dist_nil = self.compute_distances();
-            if dist_nil == u32::MAX {
+            if !dist_nil {
                 break;
             }
 
-            for (vertex, paired) in self.layer_one.clone() {
+            for (u, paired) in self.layer_one.clone() {
                 if paired.is_none() {
-                    self.compute_matching(Some(vertex), dist_nil);
+                    self.compute_matching(Some(u));
                 }
             }
         }
