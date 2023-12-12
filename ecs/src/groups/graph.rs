@@ -48,7 +48,7 @@ impl BipartiteGroupsGraph {
     fn compute_distances(&mut self) -> bool {
         let mut queue = VecDeque::<Option<i128>>::new();
 
-        for (vertex, pair) in self.layer_one.clone() {
+        for (&vertex, pair) in &self.layer_one {
             if pair.is_none() {
                 *self.distances.get_mut(&Some(vertex)).unwrap() = 0;
 
@@ -62,13 +62,15 @@ impl BipartiteGroupsGraph {
 
         while !queue.is_empty() {
             let vertex = queue.pop_front().unwrap();
-
             let dist_u = self.distances.get(&vertex).unwrap().clone();
+
             if dist_u < self.distances.get(&None).unwrap().clone() {
                 // if vertex was None we would not be there
-                for v in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap().clone() {
+
+                for &v in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap() {
                     let pair_v = self.layer_two.get(&v).unwrap();
                     let mut dist_pair_v = self.distances.get_mut(pair_v).unwrap();
+
                     if dist_pair_v.clone() == u32::MAX {
                         *dist_pair_v = dist_u + 1;
                         queue.push_back(*pair_v);
@@ -80,13 +82,57 @@ impl BipartiteGroupsGraph {
         return self.distances.get(&None).unwrap().clone() < u32::MAX;
     }
 
-    fn compute_matching(&mut self, vertex: Option<i128>) -> bool {
+    fn compute_matching(&mut self, vertex: Option<i128>) {
+        let mut stack = VecDeque::<Option<i128>>::new();
+        let mut visited = HashSet::<i128>::new();
+
+        stack.push_back(vertex);
+
+        while !stack.is_empty() {
+            let vertex = stack.pop_back().unwrap();
+
+            if !vertex.is_none() {
+                let mut found = false;
+                for &v in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap() {
+                    let pair_v = self.layer_two.get_mut(&v).unwrap().clone();
+
+                    if !visited.contains(&v) {
+                        if self.distances.get(&vertex).unwrap().clone() == u32::MAX {
+                            if self.distances.get(&pair_v).unwrap().clone() == u32::MAX {
+                                stack.push_back(pair_v);
+                                visited.insert(v);
+                                found = true;
+                                *self.layer_two.get_mut(&v).unwrap() = vertex;
+                                *self.layer_one.get_mut(&vertex.unwrap()).unwrap() = Some(v.clone());
+                                break;
+                            }
+                        } else {
+                            if self.distances.get(&pair_v).unwrap().clone() == self.distances.get(&vertex).unwrap().clone() + 1 {
+                                stack.push_back(pair_v);
+                                visited.insert(v);
+                                found = true;
+                                *self.layer_two.get_mut(&v).unwrap() = vertex;
+                                *self.layer_one.get_mut(&vertex.unwrap()).unwrap() = Some(v.clone());
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if !found {
+                    *self.distances.get_mut(&vertex).unwrap() = u32::MAX;
+                }
+            }
+        }
+    }
+
+    fn compute_matching_recursif(&mut self, vertex: Option<i128>) -> bool  {
         if !vertex.is_none() {
             for v in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap().clone() {
                 let pair_v = self.layer_two.get_mut(&v).unwrap().clone();
                 if self.distances.get(&vertex).unwrap().clone() == u32::MAX {
                     if self.distances.get(&pair_v).unwrap().clone() == u32::MAX {
-                        if self.compute_matching(pair_v) {
+                        if self.compute_matching_recursif(pair_v) {
                             *self.layer_two.get_mut(&v).unwrap() = vertex;
                             *self.layer_one.get_mut(&vertex.unwrap()).unwrap() = Some(v.clone());
 
@@ -95,7 +141,7 @@ impl BipartiteGroupsGraph {
                     }
                 } else {
                     if self.distances.get(&pair_v).unwrap().clone() == self.distances.get(&vertex).unwrap().clone() + 1 {
-                        if self.compute_matching(pair_v) {
+                        if self.compute_matching_recursif(pair_v) {
                             *self.layer_two.get_mut(&v).unwrap() = vertex;
                             *self.layer_one.get_mut(&vertex.unwrap()).unwrap() = Some(v.clone());
 
@@ -123,7 +169,7 @@ impl BipartiteGroupsGraph {
 
             for (u, paired) in self.layer_one.clone() {
                 if paired.is_none() {
-                    self.compute_matching(Some(u));
+                    self.compute_matching_recursif(Some(u));
                 }
             }
         }
