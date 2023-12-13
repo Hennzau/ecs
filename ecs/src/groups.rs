@@ -4,4 +4,5 @@ This is the main module for stocking entities in different groups, in order to i
 
 pub mod graph;
 pub mod memory_mapping;
+pub mod fast_storage;
 
