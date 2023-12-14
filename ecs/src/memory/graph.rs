@@ -69,7 +69,7 @@ impl BipartiteGroupsGraph {
 
                 for &v in self.layer_one_neighbours.get(&vertex.unwrap()).unwrap() {
                     let pair_v = self.layer_two.get(&v).unwrap();
-                    let mut dist_pair_v = self.distances.get_mut(pair_v).unwrap();
+                    let dist_pair_v = self.distances.get_mut(pair_v).unwrap();
 
                     if dist_pair_v.clone() == u32::MAX {
                         *dist_pair_v = dist_u + 1;
@@ -80,55 +80,6 @@ impl BipartiteGroupsGraph {
         }
 
         return self.distances.get(&None).unwrap().clone() < u32::MAX;
-    }
-
-    /*
-    function DFSIterative (u):
-        stack = [u]
-
-        while stack is not empty
-            u = stack.pop()
-            is_leaf = true
-
-            if u != NIL
-                for each v in Adj[u]:
-                    if Dist[ Pair_V[v] ] == Dist[u] + 1
-                        stack.append(Pair_V[v])
-                        is_leaf = false
-                        if Pair_V[v] == NIL
-                            Pair_V[v] = u
-                            Pair_U[u] = v
-
-                Dist[u] = infinity
-                if is_leaf
-                     break;
-    */
-
-    fn compute_matching_iterative(&mut self, vertex: Option<i128>) {
-        let mut stack = VecDeque::<Option<i128>>::new();
-        stack.push_back(vertex);
-
-        while !stack.is_empty() {
-            let u = stack.pop_back().unwrap();
-            let mut is_leaf = true;
-
-            if u.is_some() {
-                let u = u.unwrap();
-
-                for v in self.layer_one_neighbours.get(u).unwrap() {
-                    let pair_v = self.layer_two.get_mut(&v).unwrap().clone();
-                    if self.distances.get(&vertex).unwrap().clone() == u32::MAX {
-                        if self.distances.get(&pair_v).unwrap().clone() == u32::MAX {
-
-                        }
-                    } else {
-                        if self.distances.get(&pair_v).unwrap().clone() == self.distances.get(&vertex).unwrap().clone() + 1 {
-
-                        }
-                    }
-                }
-            }
-        }
     }
 
     fn compute_matching(&mut self, vertex: Option<i128>) -> bool {

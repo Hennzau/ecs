@@ -6,7 +6,7 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, VecDeque};
 
-use crate::groups::graph::BipartiteGroupsGraph;
+use crate::memory::graph::BipartiteGroupsGraph;
 
 pub type MemoryMappingDescriptor = Vec::<Vec<u64>>;
 
@@ -22,7 +22,7 @@ pub struct MemoryMapping {
 }
 
 impl MemoryMapping {
-    pub fn new(descriptor: MemoryMappingDescriptor) -> Self {
+    pub fn new(mut descriptor: MemoryMappingDescriptor) -> Self {
         fn group_id(set: &Vec<u64>) -> u128 {
             let mut result = 0u128;
 
@@ -98,7 +98,7 @@ impl MemoryMapping {
 
                 if index.is_none() {
                     if mapping.contains_key(&current) {
-                        let (vec_index, in_index) = mapping.get(&current).unwrap();
+                        let (vec_index, _) = mapping.get(&current).unwrap();
                         index = Some(*vec_index);
                     } else {
                         let i = containers.len();
@@ -132,5 +132,9 @@ impl MemoryMapping {
 
     pub fn len(&self) -> usize {
         self.containers.len()
+    }
+
+    pub fn descriptor(&self) -> &MemoryMappingDescriptor {
+        &self.descriptor
     }
 }

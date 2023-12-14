@@ -1,5 +1,5 @@
 use crate::entity::Entity;
-use crate::groups::memory_mapping::{MemoryMapping, MemoryMappingDescriptor};
+use crate::memory::mapping::{MemoryMapping, MemoryMappingDescriptor};
 
 pub struct FastStorage {
     entities: Vec<Vec<Entity>>,
@@ -19,5 +19,9 @@ impl FastStorage {
             entities: entities,
             mapping: mapping,
         }
+    }
+
+    pub fn systems_id(&self) -> &MemoryMappingDescriptor {
+        self.mapping.descriptor()
     }
 }
