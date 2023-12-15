@@ -18,7 +18,7 @@ pub struct Application {
     next: u64,
 
     pools: HashMap<u64, Box<dyn AnyComponentPool>>,
-    storage: MappedStorage,
+    pub storage: MappedStorage,
 }
 
 impl Application {
@@ -52,7 +52,7 @@ impl Application {
         return components.contains(&id);
     }
 
-    fn associated_bundle(&self, entity: &Entity, ids: Vec<u64>) -> bool {
+    fn associated_bundle(&self, entity: &Entity, ids: &Vec<u64>) -> bool {
         if !self.alive(entity) {
             return false;
         }
