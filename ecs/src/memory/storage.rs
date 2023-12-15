@@ -1,12 +1,12 @@
 use crate::entity::Entity;
 use crate::memory::mapping::{MemoryMapping, MemoryMappingDescriptor};
 
-pub struct FastStorage {
+pub struct MappedStorage {
     entities: Vec<Vec<Entity>>,
     mapping: MemoryMapping,
 }
 
-impl FastStorage {
+impl MappedStorage {
     pub fn new(descriptor: MemoryMappingDescriptor) -> Self {
         let mut entities: Vec<Vec<Entity>> = Vec::new();
         let mapping = MemoryMapping::new(descriptor);
