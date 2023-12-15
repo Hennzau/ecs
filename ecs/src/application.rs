@@ -42,7 +42,7 @@ impl Application {
 
     pub fn alive(&self, entity: &Entity) -> bool { self.entities.contains_key((entity)) }
 
-    pub fn associated(&self, entity: &Entity, id: u64) -> bool {
+    fn associated(&self, entity: &Entity, id: u64) -> bool {
         if !self.alive(entity) {
             return false;
         }
@@ -52,7 +52,7 @@ impl Application {
         return components.contains(&id);
     }
 
-    pub fn associated_bundle(&self, entity: &Entity, ids: Vec<u64>) -> bool {
+    fn associated_bundle(&self, entity: &Entity, ids: Vec<u64>) -> bool {
         if !self.alive(entity) {
             return false;
         }
