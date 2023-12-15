@@ -25,7 +25,6 @@ You can then use this fresh new Component everywhere HNZ needs a ComponentTrait 
 
 The above example became, after deriving it :
 ```rust
-#[derive(Component)]
 struct Position3Df32 {
 	x: f32,
 	y: f32,
