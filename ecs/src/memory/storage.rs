@@ -21,7 +21,7 @@ impl MappedStorage {
         }
     }
 
-    pub fn systems_id(&self) -> &MemoryMappingDescriptor {
+    pub fn systems(&self) -> &MemoryMappingDescriptor {
         self.mapping.descriptor()
     }
 }

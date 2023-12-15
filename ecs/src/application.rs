@@ -1,3 +1,4 @@
+use std::alloc::System;
 use std::collections::{HashMap, HashSet};
 
 use crate::{
@@ -14,8 +15,6 @@ pub type SystemsComponentsDescriptor = Vec::<Vec<u64>>;
 
 pub struct Application {
     entities: HashMap<Entity, HashSet<u64>>,
-    groups: HashSet<u128>,
-
     next: u64,
 
     pools: HashMap<u64, Box<dyn AnyComponentPool>>,
@@ -26,12 +25,13 @@ impl Application {
     pub fn new(mut descriptor: SystemsComponentsDescriptor) -> Self {
         Self {
             entities: HashMap::new(),
-            groups: HashSet::new(),
             next: 0,
             pools: HashMap::new(),
-            storage: MappedStorage::new(descriptor)
+            storage: MappedStorage::new(descriptor),
         }
     }
+
+    pub fn systems(&self) -> &SystemsComponentsDescriptor { self.storage.systems() }
 
     pub fn spawn(&mut self) -> Entity {
         self.entities.insert(self.next as Entity, HashSet::new());
@@ -52,9 +52,17 @@ impl Application {
         return components.contains(&id);
     }
 
-    pub fn add_id (&mut self, entity: &Entity) {
+    pub fn associated_bundle(&self, entity: &Entity, ids: Vec<u64>) -> bool {
+        if !self.alive(entity) {
+            return false;
+        }
 
+
+        let components = self.entities.get(entity).unwrap();
+        return ids.iter().all(|x| components.contains(x));
     }
+
+    pub fn add_id(&mut self, entity: &Entity) {}
 
     pub fn try_group_id(&self, entity: &Entity) -> Option<u128> {
         match self.entities.get(entity) {
@@ -73,7 +81,7 @@ impl Application {
         }
     }
 
-    fn try_retrieve_pool_by_id(&mut self, id: u64) -> Option<&mut Box<dyn AnyComponentPool>> {
+    fn try_retrieve_pool(&mut self, id: u64) -> Option<&mut Box<dyn AnyComponentPool>> {
         self.pools.get_mut(&id)
     }
 
@@ -82,8 +90,6 @@ impl Application {
             let pool: ComponentPool<T> = ComponentPool::new();
 
             self.pools.insert(T::id(), Box::new(pool));
-
-            let mut new_hashset
         }
 
         return self.pools.get_mut(&T::id()).unwrap().as_any().downcast_mut::<ComponentPool<T>>().unwrap();
@@ -106,24 +112,10 @@ impl Application {
         return Some(pool.add_or_get_component(entity, value));
     }
 
-    pub fn remove_component<T: ComponentTrait + 'static>(&mut self, entity: &Entity) {
-        if self.alive(entity) {
-            let id = T::id();
-
-            if self.associated(entity, id) {
-                let pool = self.register_pool_or_retrieve::<T>();
-                pool.remove_component(entity);
-
-                let components = self.entities.get_mut(entity).unwrap();
-                components.remove(&id);
-            }
-        }
-    }
-
-    pub fn remove_component_by_id(&mut self, entity: &Entity, id: u64) {
+    pub fn remove_component(&mut self, entity: &Entity, id: u64) {
         if self.alive(entity) {
             if self.associated(entity, id) {
-                let pool = self.try_retrieve_pool_by_id(id).unwrap();
+                let pool = self.try_retrieve_pool(id).unwrap();
                 pool.remove_component(entity);
 
                 let components = self.entities.get_mut(entity).unwrap();
@@ -140,6 +132,5 @@ impl Application {
         let pool = self.register_pool_or_retrieve::<T>();
 
         return pool.try_get_component(entity);
-    }
     }
 }
