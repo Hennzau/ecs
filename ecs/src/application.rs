@@ -1,28 +1,28 @@
-use std::alloc::System;
 use std::collections::{HashMap, HashSet};
 
-use crate::{
-    entity::Entity,
-    component::{
-        ComponentTrait,
-        AnyComponentPool,
-        ComponentPool,
-    },
-};
-use crate::memory::storage::MappedStorage;
+pub mod entity;
+pub mod component;
+pub mod system;
 
-pub type SystemsComponentsDescriptor = Vec::<Vec<u64>>;
+use entity::Entity;
+use component::{
+    AnyComponentPool,
+    ComponentPool,
+    ComponentTrait,
+};
+
+use crate::memory::storage::MappedStorage;
 
 pub struct Application {
     entities: HashMap<Entity, HashSet<u64>>,
     next: u64,
 
     pools: HashMap<u64, Box<dyn AnyComponentPool>>,
-    pub storage: MappedStorage,
+    storage: MappedStorage,
 }
 
 impl Application {
-    pub fn new(mut descriptor: SystemsComponentsDescriptor) -> Self {
+    pub fn new() -> Self {
         Self {
             entities: HashMap::new(),
             next: 0,
@@ -30,8 +30,6 @@ impl Application {
             storage: MappedStorage::new(descriptor),
         }
     }
-
-    pub fn systems(&self) -> &SystemsComponentsDescriptor { self.storage.systems() }
 
     pub fn spawn(&mut self) -> Entity {
         self.entities.insert(self.next as Entity, HashSet::new());
@@ -42,17 +40,7 @@ impl Application {
 
     pub fn alive(&self, entity: &Entity) -> bool { self.entities.contains_key((entity)) }
 
-    fn associated(&self, entity: &Entity, id: u64) -> bool {
-        if !self.alive(entity) {
-            return false;
-        }
-
-        let components = self.entities.get(entity).unwrap();
-
-        return components.contains(&id);
-    }
-
-    fn associated_bundle(&self, entity: &Entity, ids: &Vec<u64>) -> bool {
+    fn associated(&self, entity: &Entity, ids: &Vec<u64>) -> bool {
         if !self.alive(entity) {
             return false;
         }
@@ -62,9 +50,17 @@ impl Application {
         return ids.iter().all(|x| components.contains(x));
     }
 
-    pub fn add_id(&mut self, entity: &Entity) {}
+    fn register_pool_or_retrieve<T: ComponentTrait + 'static>(&mut self) -> &mut ComponentPool<T> {
+        if !self.pools.contains_key(&T::id()) {
+            let pool: ComponentPool<T> = ComponentPool::new();
 
-    pub fn try_group_id(&self, entity: &Entity) -> Option<u128> {
+            self.pools.insert(T::id(), Box::new(pool));
+        }
+
+        return self.pools.get_mut(&T::id()).unwrap().as_any().downcast_mut::<ComponentPool<T>>().unwrap();
+    }
+
+    fn try_group_id(&self, entity: &Entity) -> Option<u128> {
         match self.entities.get(entity) {
             Some(components) => {
                 let mut result: u128 = 0;
@@ -85,24 +81,14 @@ impl Application {
         self.pools.get_mut(&id)
     }
 
-    fn register_pool_or_retrieve<T: ComponentTrait + 'static>(&mut self) -> &mut ComponentPool<T> {
-        if !self.pools.contains_key(&T::id()) {
-            let pool: ComponentPool<T> = ComponentPool::new();
-
-            self.pools.insert(T::id(), Box::new(pool));
-        }
-
-        return self.pools.get_mut(&T::id()).unwrap().as_any().downcast_mut::<ComponentPool<T>>().unwrap();
-    }
-
     pub fn try_add_component<T: ComponentTrait + 'static>(&mut self, entity: &Entity, value: T) -> Option<&mut T> {
         if !self.alive(entity) {
             return None;
         }
 
-        let id = T::id();
+        let id = Vec::from([T::id()]);
 
-        if !self.associated(entity, id) {
+        if !self.associated(entity, &id) {
             let components = self.entities.get_mut(entity).unwrap();
             components.insert(id);
         }
@@ -110,6 +96,16 @@ impl Application {
         let pool = self.register_pool_or_retrieve::<T>();
 
         return Some(pool.add_or_get_component(entity, value));
+    }
+
+    pub fn try_get_component<T: ComponentTrait + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
+        if !self.pools.contains_key(&T::id()) {
+            return None;
+        }
+
+        let pool = self.register_pool_or_retrieve::<T>();
+
+        return pool.try_get_component(entity);
     }
 
     pub fn remove_component(&mut self, entity: &Entity, id: u64) {
@@ -122,15 +118,5 @@ impl Application {
                 components.remove(&id);
             }
         }
-    }
-
-    pub fn try_get_component<T: ComponentTrait + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
-        if !self.pools.contains_key(&T::id()) {
-            return None;
-        }
-
-        let pool = self.register_pool_or_retrieve::<T>();
-
-        return pool.try_get_component(entity);
     }
 }

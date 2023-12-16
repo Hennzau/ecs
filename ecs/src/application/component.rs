@@ -2,7 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::ops::DerefMut;
 
-use crate::entity::Entity;
+use crate::application::entity::Entity;
 
 pub use ecs_macros::Component;
 

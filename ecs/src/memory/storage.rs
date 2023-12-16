@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use crate::entity::Entity;
+use crate::application::entity::Entity;
 use crate::memory::mapping::{MemoryMapping, MemoryMappingDescriptor};
 
 pub struct MappedStorage {
