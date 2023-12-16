@@ -11,6 +11,8 @@ use component::{
     ComponentTrait,
 };
 
+use system::System;
+
 use crate::memory::storage::MappedStorage;
 
 pub struct Application {
@@ -19,15 +21,34 @@ pub struct Application {
 
     pools: HashMap<u64, Box<dyn AnyComponentPool>>,
     storage: MappedStorage,
+
+    systems: HashMap<u128, Vec<Box<dyn System>>>
 }
 
 impl Application {
-    pub fn new() -> Self {
+    pub fn new(systems: Vec<Box<dyn System>>) -> Self {
+        let mut descriptor = Vec::<Vec::<u64>>::new();
+
+        for system in &systems {
+            descriptor.push(system.components());
+        }
+
+        let mut mapped_systems = HashMap::<u128, Vec<Box<dyn System>>>::new();
+
+        for system in systems {
+            if !mapped_systems.contains_key(&system.id()) {
+                mapped_systems.insert(system.id(), Vec::new());
+            }
+
+            mapped_systems.get_mut(&system.id()).unwrap().push(system);
+        }
+
         Self {
             entities: HashMap::new(),
             next: 0,
             pools: HashMap::new(),
             storage: MappedStorage::new(descriptor),
+            systems: mapped_systems
         }
     }
 
@@ -86,9 +107,9 @@ impl Application {
             return None;
         }
 
-        let id = Vec::from([T::id()]);
+        let id = T::id();
 
-        if !self.associated(entity, &id) {
+        if !self.associated(entity, &vec![id]) {
             let components = self.entities.get_mut(entity).unwrap();
             components.insert(id);
         }
@@ -108,9 +129,9 @@ impl Application {
         return pool.try_get_component(entity);
     }
 
-    pub fn remove_component(&mut self, entity: &Entity, id: u64) {
+    pub fn try_remove_component(&mut self, entity: &Entity, id: u64) -> Box<dyn ComponentTrait> {
         if self.alive(entity) {
-            if self.associated(entity, id) {
+            if self.associated(entity, &vec![id]) {
                 let pool = self.try_retrieve_pool(id).unwrap();
                 pool.remove_component(entity);
 
@@ -118,5 +139,7 @@ impl Application {
                 components.remove(&id);
             }
         }
+
+        return None
     }
 }

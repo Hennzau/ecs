@@ -55,6 +55,5 @@ impl MappedStorage {
 
     pub fn register_entity(&mut self, entity: &Entity, components: &HashSet<u64>, component: u64) {
         let groups = self.get_groups_to_update_when_add(components, component);
-
     }
 }
