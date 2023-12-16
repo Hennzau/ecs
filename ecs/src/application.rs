@@ -20,14 +20,14 @@ pub struct Application {
     next: u64,
 
     pools: HashMap<u64, Box<dyn AnyComponentPool>>,
-    storage: MappedStorage,
+    pub storage: MappedStorage,
 
     systems: HashMap<u128, Vec<Box<dyn System>>>
 }
 
 impl Application {
     pub fn new(systems: Vec<Box<dyn System>>) -> Self {
-        let mut descriptor = Vec::<Vec::<u64>>::new();
+        let mut descriptor = Vec::<Vec<u64>>::new();
 
         for system in &systems {
             descriptor.push(system.components());
@@ -59,7 +59,7 @@ impl Application {
         self.next - 1
     }
 
-    pub fn alive(&self, entity: &Entity) -> bool { self.entities.contains_key((entity)) }
+    fn alive(&self, entity: &Entity) -> bool { self.entities.contains_key(entity) }
 
     fn associated(&self, entity: &Entity, ids: &Vec<u64>) -> bool {
         if !self.alive(entity) {
@@ -111,6 +111,8 @@ impl Application {
 
         if !self.associated(entity, &vec![id]) {
             let components = self.entities.get_mut(entity).unwrap();
+            self.storage.add_entity(entity, components, id);
+
             components.insert(id);
         }
 
@@ -129,14 +131,14 @@ impl Application {
         return pool.try_get_component(entity);
     }
 
-    pub fn try_remove_component(&mut self, entity: &Entity, id: u64) -> Box<dyn ComponentTrait> {
+    pub fn try_remove_component(&mut self, entity: &Entity, id: u64) -> Option<Box<dyn ComponentTrait>> {
         if self.alive(entity) {
             if self.associated(entity, &vec![id]) {
-                let pool = self.try_retrieve_pool(id).unwrap();
-                pool.remove_component(entity);
-
                 let components = self.entities.get_mut(entity).unwrap();
                 components.remove(&id);
+
+                let pool = self.try_retrieve_pool(id).unwrap();
+                return pool.try_remove_component(entity);
             }
         }
 

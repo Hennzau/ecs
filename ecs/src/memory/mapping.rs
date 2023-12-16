@@ -130,6 +130,33 @@ impl MemoryMapping {
         }
     }
 
+    pub fn get_complete_groups_to_update_when_add(&self, groups: &Vec<u128>) -> HashMap<usize, Vec<usize>> {
+        let mut map = HashMap::<usize, Vec<usize>>::new();
+
+        for group in groups {
+            let (index, in_index) = self.mapping.get(group).unwrap().clone();
+            if !map.contains_key(&index) {
+                map.insert(index, Vec::new());
+            }
+
+            map.get_mut(&index).unwrap().push(in_index);
+        }
+
+        for (key, value) in &mut map {
+            value.sort_unstable();
+        }
+
+        return map;
+    }
+
+    pub fn value(&self, container: usize, index: usize) -> usize {
+        return self.containers.get(container).unwrap().get(index).unwrap().clone();
+    }
+
+    pub fn update_value(&mut self, container: usize, index: usize, value: usize) {
+        *self.containers.get_mut(container).unwrap().get_mut(index).unwrap() = value;
+    }
+
     pub fn len(&self) -> usize {
         self.containers.len()
     }

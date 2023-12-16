@@ -39,7 +39,7 @@ pub trait AnyComponentPool {
     */
 
     fn swap(&mut self, a: &Entity, b: &Entity);
-    fn remove_component(&mut self, entity: &Entity);
+    fn try_remove_component(&mut self, entity: &Entity) -> Option<Box<dyn ComponentTrait>>;
 }
 
 pub struct ComponentPool<T>
@@ -82,7 +82,7 @@ impl<T: ComponentTrait + 'static> AnyComponentPool for ComponentPool<T> {
         }
     }
 
-    fn remove_component(&mut self, entity: &Entity) {
+    fn try_remove_component(&mut self, entity: &Entity) -> Option<Box<dyn ComponentTrait>> {
         if self.contains(entity) {
             let last_index = self.components.len() - 1;
 
@@ -94,8 +94,14 @@ impl<T: ComponentTrait + 'static> AnyComponentPool for ComponentPool<T> {
             self.swap(&last_entity, entity);
 
             self.map.remove(entity);
-            self.components.pop();
+
+            let component = self.components.pop().unwrap();
+            let component = component as Box<dyn ComponentTrait>;
+
+            return Some(component);
         }
+
+        return None;
     }
 }
 

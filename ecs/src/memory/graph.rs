@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{
+    HashMap,
+    VecDeque
+};
 
 pub struct BipartiteGroupsGraph {
     // First layer of the bipartite graph and its calculated vertex of the second layer
