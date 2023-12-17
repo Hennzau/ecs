@@ -18,7 +18,7 @@ pub struct MemoryMapping {
     containers: Vec<Vec<usize>>,
 
     // for each element, contains the index of the container that contains this element, and its index in this container
-    mapping: HashMap<u128, (usize, usize)>,
+    pub mapping: HashMap<u128, (usize, usize)>,
 }
 
 impl MemoryMapping {
@@ -155,6 +155,12 @@ impl MemoryMapping {
 
     pub fn update_value(&mut self, container: usize, index: usize, value: usize) {
         *self.containers.get_mut(container).unwrap().get_mut(index).unwrap() = value;
+    }
+
+    pub fn get(&self, group: u128) -> (usize, usize) {
+        let (index, in_index) = self.mapping.get(&group).unwrap().clone();
+
+        return (index, self.containers.get(index).unwrap().get(in_index).unwrap().clone());
     }
 
     pub fn len(&self) -> usize {

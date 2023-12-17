@@ -5,7 +5,7 @@ use crate::memory::mapping::{MemoryMapping, MemoryMappingDescriptor};
 pub struct MappedStorage {
     pub entities: Vec<Vec<Entity>>,
     indices: Vec<HashMap<Entity, usize>>,
-    mapping: MemoryMapping,
+    pub mapping: MemoryMapping,
 }
 
 impl MappedStorage {
@@ -41,6 +41,12 @@ impl MappedStorage {
     }
 
     fn swap(&mut self, container: usize, a: usize, b: usize) {
+        let entity_a = self.entities.get(container).unwrap().get(a).unwrap().clone();
+        let entity_b = self.entities.get(container).unwrap().get(b).unwrap().clone();
+
+        *self.indices.get_mut(container).unwrap().get_mut(&entity_a).unwrap() = b;
+        *self.indices.get_mut(container).unwrap().get_mut(&entity_b).unwrap() = a;
+
         let entities = self.entities.get_mut(container).unwrap();
 
         entities.swap(a, b);
@@ -65,7 +71,13 @@ impl MappedStorage {
 
     pub fn add_entity(&mut self, entity: &Entity, components: &HashSet<u64>, component: u64) {
         let groups = self.get_groups_to_update_when_add(components, component);
+
+        println!("for entity {} : had {:?}, try add {}", entity, components, component);
+        println!("groups to be updated are: {:?}", groups);
+
         let groups = self.mapping.get_complete_groups_to_update_when_add(&groups);
+
+        println!("Equivalent recalculated is : {:?}", groups);
 
         for (container, i) in groups {
             let mut index = match self.indices.get(container).unwrap().get(entity) {
@@ -80,13 +92,29 @@ impl MappedStorage {
                 index = Some(last);
             }
 
-            let index = index.unwrap();
+            let mut index = index.unwrap();
 
             for j in i.iter().rev().copied() { // Iterate over the largest set of component to the smallest
                 let value = self.mapping.value(container, j);
+
+                println!("value of this group : {}", value);
+
                 self.swap(container, index, value);
+
+                index = value;
+
                 self.mapping.update_value(container, j, value + 1);
             }
         }
+
+        for entities in &self.entities {
+            println!("{:?}", entities);
+        }
+    }
+
+    pub fn get_entities(&self, group: u128) -> &[Entity] {
+        let (index, in_index) = self.mapping.get(group);
+
+        return &self.entities.get(index).unwrap()[0..in_index];
     }
 }
