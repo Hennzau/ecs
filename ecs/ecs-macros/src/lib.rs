@@ -9,7 +9,7 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     let name = &input.ident;
 
     let expanded = quote! {
-        impl hnz::ecs::application::component::ComponentTrait for #name {
+        impl hnz::ecs::application::component::AnyComponent for #name {
             fn id() -> u64 {
                 use std::{
                     collections::hash_map::DefaultHasher,

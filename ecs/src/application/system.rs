@@ -1,16 +1,16 @@
-use crate::application::entity::Entity;
+use crate::application::{
+    entity::Entity,
+    component::{
+        Group,
+        components_to_group
+    }
+};
 
 pub trait System {
     fn components(&self) -> Vec<u64>;
 
-    fn id(&self) -> u128 {
-        let mut result = 0u128;
-
-        for id in self.components() {
-            result += id as u128;
-        }
-
-        return result;
+    fn id(&self) -> Group {
+        components_to_group(&self.components())
     }
 
     fn on_startup(&mut self, entities: &[Entity]);

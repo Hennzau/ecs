@@ -4,5 +4,6 @@ This is the main module for stocking entities in different memory, in order to i
 
 mod graph;
 mod mapping;
-pub mod storage;
 
+pub use mapping::MemoryMapping;
+pub use mapping::MemoryMappingDescriptor;

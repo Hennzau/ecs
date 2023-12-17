@@ -3,8 +3,12 @@
     fast iterations over entities with selected components
 */
 
-use std::cmp::Ordering;
-use std::collections::{HashMap, VecDeque};
+use std::{
+    cmp::Ordering,
+    collections::{
+        HashMap, VecDeque
+    }
+};
 
 use crate::memory::graph::BipartiteGroupsGraph;
 
@@ -130,27 +134,27 @@ impl MemoryMapping {
         }
     }
 
-    pub fn get_complete_groups_to_update_when_add(&self, groups: &Vec<u128>) -> HashMap<usize, Vec<usize>> {
-        let mut map = HashMap::<usize, Vec<usize>>::new();
+    pub fn map_and_sort(&self, groups: &Vec<u128>) -> HashMap<usize, Vec<usize>> {
+        let mut result = HashMap::new();
 
         for group in groups {
             let (index, in_index) = self.mapping.get(group).unwrap().clone();
-            if !map.contains_key(&index) {
-                map.insert(index, Vec::new());
+            if !result.contains_key(&index) {
+                result.insert(index, Vec::new());
             }
 
-            map.get_mut(&index).unwrap().push(in_index);
+            result.get_mut(&index).unwrap().push(in_index);
         }
 
-        for (key, value) in &mut map {
+        for value in &mut result.values() {
             value.sort_unstable();
         }
 
-        return map;
+        return result;
     }
 
     pub fn value(&self, container: usize, index: usize) -> usize {
-        return self.containers.get(container).unwrap().get(index).unwrap().clone();
+        self.containers.get(container).unwrap().get(index).unwrap().clone()
     }
 
     pub fn update_value(&mut self, container: usize, index: usize, value: usize) {

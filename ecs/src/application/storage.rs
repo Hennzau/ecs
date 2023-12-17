@@ -1,6 +1,15 @@
-use std::collections::{HashMap, HashSet};
-use crate::application::entity::Entity;
-use crate::memory::mapping::{MemoryMapping, MemoryMappingDescriptor};
+use std::collections::{
+    HashMap,
+    HashSet
+};
+
+use crate::{
+    application::entity::Entity,
+    memory::{
+        MemoryMapping,
+        MemoryMappingDescriptor,
+    }
+};
 
 pub struct MappedStorage {
     pub entities: Vec<Vec<Entity>>,
@@ -71,13 +80,7 @@ impl MappedStorage {
 
     pub fn add_entity(&mut self, entity: &Entity, components: &HashSet<u64>, component: u64) {
         let groups = self.get_groups_to_update_when_add(components, component);
-
-        println!("for entity {} : had {:?}, try add {}", entity, components, component);
-        println!("groups to be updated are: {:?}", groups);
-
-        let groups = self.mapping.get_complete_groups_to_update_when_add(&groups);
-
-        println!("Equivalent recalculated is : {:?}", groups);
+        let groups = self.mapping.map_and_sort(&groups);
 
         for (container, i) in groups {
             let mut index = match self.indices.get(container).unwrap().get(entity) {
@@ -97,8 +100,6 @@ impl MappedStorage {
             for j in i.iter().rev().copied() { // Iterate over the largest set of component to the smallest
                 let value = self.mapping.value(container, j);
 
-                println!("value of this group : {}", value);
-
                 self.swap(container, index, value);
 
                 index = value;
@@ -106,13 +107,9 @@ impl MappedStorage {
                 self.mapping.update_value(container, j, value + 1);
             }
         }
-
-        for entities in &self.entities {
-            println!("{:?}", entities);
-        }
     }
 
-    pub fn get_entities(&self, group: u128) -> &[Entity] {
+    pub fn view(&self, group: u128) -> &[Entity] {
         let (index, in_index) = self.mapping.get(group);
 
         return &self.entities.get(index).unwrap()[0..in_index];
