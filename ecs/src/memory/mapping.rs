@@ -22,7 +22,7 @@ pub struct MemoryMapping {
     containers: Vec<Vec<usize>>,
 
     // for each element, contains the index of the container that contains this element, and its index in this container
-    pub mapping: HashMap<u128, (usize, usize)>,
+    mapping: HashMap<u128, (usize, usize)>,
 }
 
 impl MemoryMapping {
@@ -146,11 +146,15 @@ impl MemoryMapping {
             result.get_mut(&index).unwrap().push(in_index);
         }
 
-        for value in &mut result.values() {
+        for value in result.values_mut() {
             value.sort_unstable();
         }
 
         return result;
+    }
+
+    pub fn values(&self, container: usize) -> &Vec<usize> {
+        &self.containers.get(container).unwrap()
     }
 
     pub fn value(&self, container: usize, index: usize) -> usize {
@@ -174,4 +178,6 @@ impl MemoryMapping {
     pub fn descriptor(&self) -> &MemoryMappingDescriptor {
         &self.descriptor
     }
+
+    pub fn get_map(&self) -> &HashMap<u128, (usize, usize)> { &self.mapping }
 }

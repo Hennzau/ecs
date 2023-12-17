@@ -1,7 +1,5 @@
 pub mod pool;
 
-use std::collections::HashSet;
-
 pub use ecs_macros::Component as ComponentBuilder;
 
 pub type Component = u64;
@@ -17,16 +15,6 @@ pub trait AnyComponent {
 }
 
 pub fn components_to_group(components: &Vec<Component>) -> Group {
-    let mut result = 0 as Group;
-
-    for component in components {
-        result += component.clone() as Group;
-    }
-
-    return result;
-}
-
-pub fn set_to_group(components: &HashSet<Component>) -> Group {
     let mut result = 0 as Group;
 
     for component in components {

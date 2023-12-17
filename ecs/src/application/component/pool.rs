@@ -72,8 +72,8 @@ impl<T: AnyComponent + 'static> AnyComponentPool for ComponentPool<T> {
 
             self.components.swap(index_a, index_b);
 
-            self.map.entry(a.clone()).or_insert(index_b);
-            self.map.entry(b.clone()).or_insert(index_a);
+            *self.map.get_mut(a).unwrap() = index_b;
+            *self.map.get_mut(b).unwrap() = index_a;
         }
     }
 

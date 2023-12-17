@@ -22,7 +22,6 @@ use crate::{
         system::System
     }
 };
-use crate::application::component::set_to_group;
 
 pub struct Application {
     entities: HashMap<Entity, HashSet<u64>>,
@@ -83,18 +82,10 @@ impl Application {
 */
 
 impl Application {
-    fn try_group_id(&self, entity: &Entity) -> Option<u128> {
-        match self.entities.get(entity) {
-            Some(components) => Some(set_to_group(components)),
-            None => None
-        }
-    }
-
     fn associated(&self, entity: &Entity, ids: &Vec<Component>) -> bool {
         if !self.alive(entity) {
             return false;
         }
-
 
         let components = self.entities.get(entity).unwrap();
         return ids.iter().all(|x| components.contains(x));
@@ -123,7 +114,7 @@ impl Application {
 
         if !self.associated(entity, &vec![id]) {
             let components = self.entities.get_mut(entity).unwrap();
-            self.storage.add_entity(entity, components, id);
+            self.storage.register_new_group(entity, components, id);
 
             components.insert(id);
         }
@@ -147,6 +138,8 @@ impl Application {
         if self.alive(entity) {
             if self.associated(entity, &vec![id]) {
                 let components = self.entities.get_mut(entity).unwrap();
+                self.storage.remove_from_groups(entity, components, id);
+
                 components.remove(&id);
 
                 let pool = self.try_retrieve_pool(id).unwrap();
@@ -160,10 +153,10 @@ impl Application {
 
 impl Application {
     pub fn debug_storage(&self) -> &Vec<Vec<Entity>> {
-        return &self.storage.entities
+        return &self.storage.entities()
     }
 
     pub fn debug_mapping(&self) -> &HashMap<u128, (usize, usize)> {
-        return &self.storage.mapping.mapping
+        self.storage.mapping()
     }
 }
