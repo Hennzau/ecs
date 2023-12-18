@@ -73,11 +73,11 @@ impl MappedStorage {
         return new_groups.symmetric_difference(&previous_groups).cloned().collect();
     }
 
-    pub fn check_for_add(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) {
+    pub fn process_add(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) -> Vec<Group> {
         let groups = self.update_new(components, component);
-        let groups = self.mapping.map_and_sort(&groups);
+        let mapped_groups = self.mapping.map_and_sort(&groups);
 
-        for (container, i) in groups {
+        for (container, i) in mapped_groups {
             let mut index = match self.indices.get(container).unwrap().get(entity) {
                 Some(index) => index.clone(),
                 None => {
@@ -90,12 +90,14 @@ impl MappedStorage {
             };
 
             for j in i.iter().rev().copied() { // Iterate over the largest set of component to the smallest
-                let value = self.mapping.value(container, j);
-                self.mapping.update_value(container, j, value + 1);
+                let value = self.mapping.cursor(container, j);
+                self.mapping.advance_cursor(container, j);
 
                 index = self.swap_entities(container, index, value);
             }
         }
+
+        return groups;
     }
 
     fn update_remove(&self, components: &HashSet<Component>, component: Component) -> Vec<Group> {
@@ -115,40 +117,40 @@ impl MappedStorage {
         return new_groups.symmetric_difference(&previous_groups).cloned().collect();
     }
 
-    pub fn check_for_remove(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) {
+    pub fn process_remove(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) -> Vec<Group> {
         let groups = self.update_remove(components, component);
-        let groups = self.mapping.map_and_sort(&groups);
+        let mapped_groups = self.mapping.map_and_sort(&groups);
 
-        for (container, i) in groups {
-            let index = match self.indices.get(container).unwrap().get(entity) {
-                Some(index) => Some(index.clone()),
-                None => None
-            };
-
-            if index.is_none() { continue; }
-
-            let mut index = index.unwrap();
+        for (container, i) in mapped_groups {
+            // By construction we are sure that there is such an entity in this container.
+            let mut index = self.indices.get(container).unwrap().get(entity).unwrap().clone();
 
             for j in i.iter().copied() { // Iterate over the largest set of component to the smallest
-                let value = self.mapping.value(container, j);
-                self.mapping.update_value(container, j, value - 1);
+                let value = self.mapping.cursor(container, j);
+                self.mapping.move_back_cursor(container, j);
 
                 index = self.swap_entities(container, index, value - 1);
             }
 
             // remove the entity if it's outside every groups of the container
 
-            let last_group = self.mapping.values(container).last().unwrap().clone();
+            let last_group = self.mapping.cursors(container).last().unwrap().clone();
             if index >= last_group {
                 self.entities.get_mut(container).unwrap().swap_remove(index);
                 self.indices.get_mut(container).unwrap().remove(entity);
             }
         }
+
+        return groups;
     }
 
     pub fn view(&self, group: Group) -> &[Entity] {
-        let (index, in_index) = self.mapping.get(group);
+        let (index, in_index) = self.mapping.search_for(group);
 
         return &self.entities.get(index).unwrap()[0..in_index];
+    }
+
+    pub fn entities(&self) -> &Vec<Vec<Entity>> {
+        &self.entities
     }
 }

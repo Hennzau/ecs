@@ -4,11 +4,14 @@ pub mod system;
 
 mod storage;
 
-use std::collections::{HashMap, HashSet};
-use storage::MappedStorage;
+use std::collections::{
+    HashMap,
+    HashSet
+};
 
 use crate::{
     application::{
+        storage::MappedStorage,
         component::{
             AnyComponent,
             Component,
@@ -75,6 +78,10 @@ impl Application {
     pub fn view(&self, group: u128) -> &[Entity] {
         self.storage.view(group)
     }
+
+    pub fn entities(&self) -> &Vec<Vec<Entity>> {
+        self.storage.entities()
+    }
 }
 
 /*
@@ -91,7 +98,7 @@ impl Application {
         return ids.iter().all(|x| components.contains(x));
     }
 
-    fn register_pool_or_retrieve<T: AnyComponent + 'static>(&mut self) -> &mut ComponentPool<T> {
+    fn add_get_or_get_pool<T: AnyComponent + 'static>(&mut self) -> &mut ComponentPool<T> {
         if !self.pools.contains_key(&T::id()) {
             let pool: ComponentPool<T> = ComponentPool::new();
 
@@ -101,27 +108,35 @@ impl Application {
         return self.pools.get_mut(&T::id()).unwrap().as_any().downcast_mut::<ComponentPool<T>>().unwrap();
     }
 
-    fn try_retrieve_pool(&mut self, id: Component) -> Option<&mut Box<dyn AnyComponentPool>> {
+    fn try_get_pool(&mut self, id: Component) -> Option<&mut Box<dyn AnyComponentPool>> {
         self.pools.get_mut(&id)
     }
 
-    pub fn try_add_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Option<&mut T> {
+    pub fn try_add_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Option<&mut T> {
         if !self.alive(entity) {
             return None;
         }
 
         let id = T::id();
 
+        let mut groups = Vec::<Group>::new();
         if !self.associated(entity, &vec![id]) {
             let components = self.entities.get_mut(entity).unwrap();
-            self.storage.check_for_add(entity, components, id);
+            groups = self.storage.process_add(entity, components, id);
 
             components.insert(id);
         }
 
-        let pool = self.register_pool_or_retrieve::<T>();
+        // You must call 'on_startup' methods, after creating components because those systems may need to get the components
 
-        return Some(pool.add_or_get_component(entity, value));
+        let pool = self.add_get_or_get_pool::<T>();
+        pool.add_get_or_get(entity, value);
+
+        self.on_startup(&groups, entity);
+
+        let pool = self.add_get_or_get_pool::<T>();
+
+        return pool.try_get(entity);
     }
 
     pub fn try_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
@@ -129,24 +144,70 @@ impl Application {
             return None;
         }
 
-        let pool = self.register_pool_or_retrieve::<T>();
+        let pool = self.add_get_or_get_pool::<T>();
 
-        return pool.try_get_component(entity);
+        return pool.try_get(entity);
     }
 
-    pub fn try_remove_component(&mut self, entity: &Entity, id: Component) -> Option<Box<dyn AnyComponent>> {
+    pub fn try_remove_get_component(&mut self, entity: &Entity, id: Component) -> Option<Box<dyn AnyComponent>> {
         if self.alive(entity) {
             if self.associated(entity, &vec![id]) {
-                let components = self.entities.get_mut(entity).unwrap();
-                self.storage.check_for_remove(entity, components, id);
+                let components = self.entities.get(entity).unwrap();
+                let groups = self.storage.process_remove(entity, components, id);
 
+                // You need to call 'on_quit' methods before removing components because systems may need those
+
+                self.on_quit(&groups, entity);
+
+                let components = self.entities.get_mut(entity).unwrap();
                 components.remove(&id);
 
-                let pool = self.try_retrieve_pool(id).unwrap();
-                return pool.try_remove_component(entity);
+                let pool = self.try_get_pool(id).unwrap();
+                return pool.try_remove_get(entity);
             }
         }
 
         return None
+    }
+
+    pub fn try_remove_component(&mut self, entity: &Entity, id: Component) {
+        if self.alive(entity) {
+            if self.associated(entity, &vec![id]) {
+                let components = self.entities.get(entity).unwrap();
+                let groups = self.storage.process_remove(entity, components, id);
+
+                // You need to call 'on_quit' methods before removing components because systems may need those
+
+                self.on_quit(&groups, entity);
+
+                let components = self.entities.get_mut(entity).unwrap();
+                components.remove(&id);
+
+                let pool = self.try_get_pool(id).unwrap();
+                pool.try_remove(entity);
+            }
+        }
+    }
+}
+
+/*
+    Systems
+*/
+
+impl Application {
+    pub fn on_startup(&mut self, groups: &Vec<Group>, entity: &Entity) {
+        for group in groups {
+            for system in self.systems.get_mut(group).unwrap() {
+                system.on_startup(&[entity.clone()]);
+            }
+        }
+    }
+
+    pub fn on_quit(&mut self, groups: &Vec<Group>, entity: &Entity) {
+        for group in groups {
+            for system in self.systems.get_mut(group).unwrap() {
+                system.on_quit(&[entity.clone()]);
+            }
+        }
     }
 }

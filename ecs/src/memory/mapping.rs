@@ -153,22 +153,26 @@ impl MemoryMapping {
         return result;
     }
 
-    pub fn values(&self, container: usize) -> &Vec<usize> {
+    pub fn cursors(&self, container: usize) -> &Vec<usize> {
         &self.cursor.get(container).unwrap()
     }
 
-    pub fn value(&self, container: usize, index: usize) -> usize {
+    pub fn cursor(&self, container: usize, index: usize) -> usize {
         self.cursor.get(container).unwrap().get(index).unwrap().clone()
     }
 
-    pub fn update_value(&mut self, container: usize, index: usize, value: usize) {
-        *self.cursor.get_mut(container).unwrap().get_mut(index).unwrap() = value;
+    pub fn search_for(&self, group: u128) -> (usize, usize) {
+        let (container, index) = self.mapping.get(&group).unwrap().clone();
+
+        return (container, self.cursor(container, index));
     }
 
-    pub fn get(&self, group: u128) -> (usize, usize) {
-        let (index, in_index) = self.mapping.get(&group).unwrap().clone();
+    pub fn advance_cursor(&mut self, container: usize, index: usize) {
+        (*self.cursor.get_mut(container).unwrap().get_mut(index).unwrap()) += 1;
+    }
 
-        return (index, self.cursor.get(index).unwrap().get(in_index).unwrap().clone());
+    pub fn move_back_cursor(&mut self, container: usize, index: usize) {
+        (*self.cursor.get_mut(container).unwrap().get_mut(index).unwrap()) -= 1;
     }
 
     pub fn len(&self) -> usize {
@@ -178,6 +182,4 @@ impl MemoryMapping {
     pub fn descriptor(&self) -> &MemoryMappingDescriptor {
         &self.descriptor
     }
-
-    pub fn get_map(&self) -> &HashMap<u128, (usize, usize)> { &self.mapping }
 }
