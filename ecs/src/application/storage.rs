@@ -73,7 +73,7 @@ impl MappedStorage {
         return new_groups.symmetric_difference(&previous_groups).cloned().collect();
     }
 
-    pub fn register_new_group(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) {
+    pub fn check_for_add(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) {
         let groups = self.update_new(components, component);
         let groups = self.mapping.map_and_sort(&groups);
 
@@ -115,7 +115,7 @@ impl MappedStorage {
         return new_groups.symmetric_difference(&previous_groups).cloned().collect();
     }
 
-    pub fn remove_from_groups(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) {
+    pub fn check_for_remove(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) {
         let groups = self.update_remove(components, component);
         let groups = self.mapping.map_and_sort(&groups);
 
@@ -150,13 +150,5 @@ impl MappedStorage {
         let (index, in_index) = self.mapping.get(group);
 
         return &self.entities.get(index).unwrap()[0..in_index];
-    }
-
-    pub fn mapping(&self) -> &HashMap<Group, (usize, usize)> {
-        self.mapping.get_map()
-    }
-
-    pub fn entities(&self) -> &Vec<Vec<Entity>> {
-        &self.entities
     }
 }

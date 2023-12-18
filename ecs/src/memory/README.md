@@ -2,14 +2,15 @@
 
 ## Memory
 
-The **memory** part of this crate provides a way to map a storage in order to keep elements
-sorted.
+The **memory** section of this crate offers a method to map a storage for the purpose of maintaining sorted elements.
 
-The idea is to sort entities into many vectors to track which have a certain combination of components.
+The concept involves organizing entities into multiple vectors to monitor those that possess specific combinations of
+components.
 
 ### Example
-You may need a fast access to all entities that have the set of components **A,B,C** and **A,B** and **A**. One way to do this is to 
-sort entities in a "virtual nested storage".
+
+You may need fast access to all entities that have the set of components **A, B, C** and **A, B,** and **A**. One way to
+achieve this is by sorting entities within a 'virtual nested storage'
 
 ````rust
 [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 10, 22, 6, 26, 14, 30, 2, 34, 18, 38]
@@ -18,10 +19,13 @@ sort entities in a "virtual nested storage".
   ABC                                AB                                 A
 ````
 
-Here, entities are represented by their ID (from 0 to 40). Entities are stored in a vector contiguously and sorted in a way that
-every entities that have **A,B,C** are before the ABC cursor, every entities that have **A,B** are stored before the AB cursor etc...
+Here, entities are identified by their IDs, ranging from 0 to 40. These entities are stored contiguously in a vector and
+sorted in a manner where entities possessing **A, B, C** precede the ABC cursor, those with **A, B** are positioned
+before the
+AB cursor, and so forth...
 
-The real storage looks like that:
+The actual storage appears as follows:
+
 ````rust
 [
     [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 10, 22, 6, 26, 14, 30, 2, 34, 18, 38],
@@ -39,8 +43,9 @@ The real storage looks like that:
 ]
 ````
 
-The idea is to maintain a map that tells you the storage you have to look inside for your entities, and the cursor. In our code, 
-the `graph.rs` module and `mapping.rs` module generate a map that looks like that :
+The concept is to uphold a mapping system that directs you to the storage where your entities are located, along with
+indicating the cursor. In our code, the ``graph.rs`` module and ``mapping.rs`` module generate a map that appears as
+follows:
 
 ````rust
 {
@@ -63,8 +68,9 @@ For this example, with 3 different components, when we want fast access to each 
 
 ### How to use this mapping method
 
-Now you've create a mapping, you need to use it to store entities in the right order. To do that, when you add a component to an entity,
-you need to check in which groups the entity belongs now. For thos groups, use the map to get the storage that may need to be updated,
-and update it by test-and-swap for each group from the largest, to the smallest. (ABC is smallest than A because ABC contains A).
+Now that you've created a mapping, you need to utilize it to store entities in the correct order. To achieve this, when
+you add a component to an entity, you must check the groups to which the entity now belongs. For these groups, utilize
+the map to access the storage that may require updating, and perform updates using a test-and-swap approach for each
+group, beginning from the largest to the smallest. (ABC is smaller than A because ABC encompasses A)
 
-This has been implemented in : [storage.rs](..%2Fapplication%2Fstorage.rs)
+This has been implemented in : [storage.rs](https://github.com/Hennzau/hnz/blob/main/ecs/src/application/storage.rs)

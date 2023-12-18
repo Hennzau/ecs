@@ -114,7 +114,7 @@ impl Application {
 
         if !self.associated(entity, &vec![id]) {
             let components = self.entities.get_mut(entity).unwrap();
-            self.storage.register_new_group(entity, components, id);
+            self.storage.check_for_add(entity, components, id);
 
             components.insert(id);
         }
@@ -138,7 +138,7 @@ impl Application {
         if self.alive(entity) {
             if self.associated(entity, &vec![id]) {
                 let components = self.entities.get_mut(entity).unwrap();
-                self.storage.remove_from_groups(entity, components, id);
+                self.storage.check_for_remove(entity, components, id);
 
                 components.remove(&id);
 
@@ -148,15 +148,5 @@ impl Application {
         }
 
         return None
-    }
-}
-
-impl Application {
-    pub fn debug_storage(&self) -> &Vec<Vec<Entity>> {
-        return &self.storage.entities()
-    }
-
-    pub fn debug_mapping(&self) -> &HashMap<u128, (usize, usize)> {
-        self.storage.mapping()
     }
 }
