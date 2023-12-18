@@ -23,3 +23,4 @@ sort entities in a "virtual nested storage".
 Here, entities are represented by their ID (from 0 to 40). Entities are stored in a vector contiguously and sorted in a way that
 every entities that have **A,B,C** are before the ABC cursor, every entities that have **A,B** are stored before the AB cursor etc...
 
+#### Example
