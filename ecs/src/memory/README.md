@@ -56,6 +56,11 @@ the `graph.rs` module and `mapping.rs` module generate a map that looks like tha
 
 The value of the cursor is accessible by the `mapping.value ()` function.
 
+### Optimization
+
+The aim of our mapping system is to create an efficient mapping, which finds a way to generate a minimum number of storages.
+For this example, with 3 different components, when we want fast access to each combination, the minimum amount of storage to create is 3, and our mapping system achieves this.
+
 ### How to use this mapping method
 
 Now you've create a mapping, you need to use it to store entities in the right order. To do that, when you add a component to an entity,
