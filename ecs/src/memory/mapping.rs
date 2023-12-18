@@ -18,10 +18,10 @@ pub struct MemoryMapping {
     // the list of elements to map
     descriptor: MemoryMappingDescriptor,
 
-    // contains the value associated for each element (usize here)
-    containers: Vec<Vec<usize>>,
+    // contains the value associated for each cursor (usize here)
+    cursor: Vec<Vec<usize>>,
 
-    // for each element, contains the index of the container that contains this element, and its index in this container
+    // for each key (u128), contains the index of the container that contains the cursor, and its index in this container
     mapping: HashMap<u128, (usize, usize)>,
 }
 
@@ -129,7 +129,7 @@ impl MemoryMapping {
 
         Self {
             descriptor: descriptor,
-            containers: containers,
+            cursor: containers,
             mapping: mapping,
         }
     }
@@ -154,25 +154,25 @@ impl MemoryMapping {
     }
 
     pub fn values(&self, container: usize) -> &Vec<usize> {
-        &self.containers.get(container).unwrap()
+        &self.cursor.get(container).unwrap()
     }
 
     pub fn value(&self, container: usize, index: usize) -> usize {
-        self.containers.get(container).unwrap().get(index).unwrap().clone()
+        self.cursor.get(container).unwrap().get(index).unwrap().clone()
     }
 
     pub fn update_value(&mut self, container: usize, index: usize, value: usize) {
-        *self.containers.get_mut(container).unwrap().get_mut(index).unwrap() = value;
+        *self.cursor.get_mut(container).unwrap().get_mut(index).unwrap() = value;
     }
 
     pub fn get(&self, group: u128) -> (usize, usize) {
         let (index, in_index) = self.mapping.get(&group).unwrap().clone();
 
-        return (index, self.containers.get(index).unwrap().get(in_index).unwrap().clone());
+        return (index, self.cursor.get(index).unwrap().get(in_index).unwrap().clone());
     }
 
     pub fn len(&self) -> usize {
-        self.containers.len()
+        self.cursor.len()
     }
 
     pub fn descriptor(&self) -> &MemoryMappingDescriptor {
