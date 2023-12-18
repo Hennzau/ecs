@@ -1,6 +1,6 @@
 use std::collections::{
     HashMap,
-    HashSet
+    HashSet,
 };
 
 use crate::{
@@ -13,9 +13,9 @@ use crate::{
         component::{
             Component,
             Group,
-            components_to_group
-        }
-    }
+            components_to_group,
+        },
+    },
 };
 
 pub struct MappedStorage {
@@ -120,7 +120,7 @@ impl MappedStorage {
         let groups = self.mapping.map_and_sort(&groups);
 
         for (container, i) in groups {
-            let mut index = match self.indices.get(container).unwrap().get(entity) {
+            let index = match self.indices.get(container).unwrap().get(entity) {
                 Some(index) => Some(index.clone()),
                 None => None
             };
