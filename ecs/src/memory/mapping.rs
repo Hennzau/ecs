@@ -10,9 +10,15 @@ use std::{
     }
 };
 
+use crate::core::component::{
+    Component,
+    Group,
+    components_to_group
+};
+
 use crate::memory::graph::BipartiteGroupsGraph;
 
-pub type MemoryMappingDescriptor = Vec::<Vec<u64>>;
+pub type MemoryMappingDescriptor = Vec::<Vec<Component>>;
 
 pub struct MemoryMapping {
     // the list of elements to map
@@ -21,22 +27,12 @@ pub struct MemoryMapping {
     // contains the value associated for each cursor (usize here)
     cursor: Vec<Vec<usize>>,
 
-    // for each key (u128), contains the index of the container that contains the cursor, and its index in this container
-    mapping: HashMap<u128, (usize, usize)>,
+    // for each key (u128/Group), contains the index of the container that contains the cursor, and its index in this container
+    mapping: HashMap<Group, (usize, usize)>,
 }
 
 impl MemoryMapping {
     pub fn new(mut descriptor: MemoryMappingDescriptor) -> Self {
-        fn group_id(set: &Vec<u64>) -> u128 {
-            let mut result = 0u128;
-
-            for &id in set {
-                result += id as u128;
-            }
-
-            return result;
-        }
-
         fn b_contains_a(a: &Vec<u64>, b: &Vec<u64>) -> bool {
             a.iter().all(|x| b.contains(x))
         }
@@ -53,10 +49,10 @@ impl MemoryMapping {
         let mut graph = BipartiteGroupsGraph::new();
 
         for i in 0..descriptor.len() {
-            let a = group_id(descriptor.get(i).unwrap()) as i128;
+            let a = components_to_group(descriptor.get(i).unwrap()) as i128;
 
             for j in 0..i {
-                let b = group_id(descriptor.get(j).unwrap()) as i128;
+                let b = components_to_group(descriptor.get(j).unwrap()) as i128;
 
                 if b_contains_a(descriptor.get(j).unwrap(), descriptor.get(i).unwrap()) {
                     graph.add_edge(b, -a);
@@ -69,14 +65,14 @@ impl MemoryMapping {
         /* Now read the output of the graph and create the correct mapping */
 
         let mut containers: Vec<Vec<usize>> = Vec::new();
-        let mut mapping: HashMap<u128, (usize, usize)> = HashMap::new();
+        let mut mapping: HashMap<Group, (usize, usize)> = HashMap::new();
 
         for (u, v) in graph.layer_one.clone() {
 
             // First we create a "branch" that contains all elements, from u to None
 
-            let mut branch: VecDeque<u128> = VecDeque::new();
-            let mut current = u as u128;
+            let mut branch: VecDeque<Group> = VecDeque::new();
+            let mut current = u as Group;
             let mut next = v;
 
             branch.push_back(current);
@@ -134,7 +130,7 @@ impl MemoryMapping {
         }
     }
 
-    pub fn map_and_sort(&self, groups: &Vec<u128>) -> HashMap<usize, Vec<usize>> {
+    pub fn map_and_sort(&self, groups: &Vec<Group>) -> HashMap<usize, Vec<usize>> {
         let mut result = HashMap::new();
 
         for group in groups {
@@ -161,7 +157,7 @@ impl MemoryMapping {
         self.cursor.get(container).unwrap().get(index).unwrap().clone()
     }
 
-    pub fn search_for(&self, group: u128) -> (usize, usize) {
+    pub fn search_for(&self, group: Group) -> (usize, usize) {
         let (container, index) = self.mapping.get(&group).unwrap().clone();
 
         return (container, self.cursor(container, index));
