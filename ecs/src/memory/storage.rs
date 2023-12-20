@@ -44,57 +44,37 @@ impl PackedEntities {
         };
     }
 
-    fn swap_entitids_test(&mut self, container: usize, a: usize, b: usize) -> Option<usize> {
-        if let Some((entity_a, entity_b)) = match self.entities.get(container) {
-            Some(container) => match container.get(a).cloned() {
-                Some(entity_a) => match container.get(b).cloned() {
-                    Some(entity_b) => Some((entity_a, entity_b)),
-                    None => None
-                }
-                None => None
-            }
-            None => None
-        } {
-            return match self.entities.get_mut(container) {
-                Some(entities) => {
-                    entities.swap(a, b);
+    pub fn entities(&self) -> &Vec<Vec<Entity>> {
+        return &self.entities;
+    }
 
-                    return match self.indices.get_mut(container) {
-                        Some(indices) => match indices.get_mut(&entity_a) {
-                            Some(cursor_a) => {
-                                *cursor_a = b;
+    pub fn view(&self, group: Group) -> &[Entity] {
+        let (index, in_index) = self.mapping.search_for(group);
 
-                                return match indices.get_mut(&entity_b) {
-                                    Some(cursor_b) => {
-                                        *cursor_b = a;
+        return &self.entities.get(index).unwrap()[0..in_index];
+    }
 
-                                        return Some (b);
-                                    }
-                                    None => None
-                                };
-                            }
-                            None => None
-                        },
-                        None => None
-                    };
-                }
-                None => None
-            };
-        }
-
-        return None;
+    pub fn process_add(&mut self, entity: &Entity, previous_components: &HashSet<Component>, components_to_add: &HashSet<Component>) -> HashSet<Group> {
+        let groups = self.mapping.get_next_membership(previous_components, components_to_add);
     }
 
     fn swap_entities(&mut self, container: usize, a: usize, b: usize) -> usize {
-        let entity_a = self.entities.get(container).unwrap().get(a).unwrap().clone();
-        let entity_b = self.entities.get(container).unwrap().get(b).unwrap().clone();
+        let entity_a = self.entities.get(container).unwrap().get(a).unwrap();
+        let entity_b = self.entities.get(container).unwrap().get(b).unwrap();
 
-        *self.indices.get_mut(container).unwrap().get_mut(&entity_a).unwrap() = b;
-        *self.indices.get_mut(container).unwrap().get_mut(&entity_b).unwrap() = a;
+        if let Some(container) = self.indices.get_mut(container) {
+            if let Some(cursor) = container.get_mut(entity_a) {
+                *cursor = b;
+            }
 
-        let entities = self.entities.get_mut(container).unwrap();
+            if let Some(cursor) = container.get_mut(entity_b) {
+                *cursor = a;
+            }
+        }
 
-        entities.swap(a, b);
+        if let Some(entities) = self.entities.get_mut(container) {
+            entities.swap(a, b);
+        }
 
         return b;
     }

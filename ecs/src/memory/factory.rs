@@ -20,44 +20,6 @@ struct Factory {
 }
 
 impl Factory {
-    fn try_get_pool_any_mut(&mut self, id: Component) -> Option<&mut Box<dyn AnyComponentPool>> {
-        return self.pools.get_mut(&id);
-    }
-
-    fn try_get_pool_any(&self, id: Component) -> Option<&Box<dyn AnyComponentPool>> {
-        return self.pools.get(&id);
-    }
-
-    fn try_get_pool_mut<T: AnyComponent + 'static>(&mut self) -> Option<&mut ComponentPool<T>> {
-        let id = T::id();
-
-        return match self.try_get_pool_any_mut(id) {
-            Some(any_pool) => any_pool.as_any_mut().downcast_mut::<ComponentPool<T>>(),
-            None => None
-        };
-    }
-
-    fn try_get_pool<T: AnyComponent + 'static>(&self) -> Option<&ComponentPool<T>> {
-        let id = T::id();
-
-        return match self.try_get_pool_any(id) {
-            Some(any_pool) => any_pool.as_any().downcast_ref::<ComponentPool<T>>(),
-            None => None
-        };
-    }
-
-    fn add_get_or_get_pool<T: AnyComponent + 'static>(&mut self) -> &mut ComponentPool<T> {
-        let id = T::id();
-
-        if !self.pools.contains_key(&id) {
-            let pool = ComponentPool::<T>::new();
-
-            self.pools.insert(id, Box::new(pool));
-        }
-
-        return self.try_get_pool_mut::<T>().unwrap();
-    }
-
     pub fn add_get_or_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> &mut T {
         let pool = self.add_get_or_get_pool::<T>();
 
@@ -115,4 +77,43 @@ impl Factory {
             None => false
         };
     }
+
+    fn try_get_pool_any_mut(&mut self, id: Component) -> Option<&mut Box<dyn AnyComponentPool>> {
+        return self.pools.get_mut(&id);
+    }
+
+    fn try_get_pool_any(&self, id: Component) -> Option<&Box<dyn AnyComponentPool>> {
+        return self.pools.get(&id);
+    }
+
+    fn try_get_pool_mut<T: AnyComponent + 'static>(&mut self) -> Option<&mut ComponentPool<T>> {
+        let id = T::id();
+
+        return match self.try_get_pool_any_mut(id) {
+            Some(any_pool) => any_pool.as_any_mut().downcast_mut::<ComponentPool<T>>(),
+            None => None
+        };
+    }
+
+    fn try_get_pool<T: AnyComponent + 'static>(&self) -> Option<&ComponentPool<T>> {
+        let id = T::id();
+
+        return match self.try_get_pool_any(id) {
+            Some(any_pool) => any_pool.as_any().downcast_ref::<ComponentPool<T>>(),
+            None => None
+        };
+    }
+
+    fn add_get_or_get_pool<T: AnyComponent + 'static>(&mut self) -> &mut ComponentPool<T> {
+        let id = T::id();
+
+        if !self.pools.contains_key(&id) {
+            let pool = ComponentPool::<T>::new();
+
+            self.pools.insert(id, Box::new(pool));
+        }
+
+        return self.try_get_pool_mut::<T>().unwrap();
+    }
+
 }

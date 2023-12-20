@@ -9,6 +9,7 @@ use std::{
         HashMap, VecDeque
     }
 };
+use std::collections::HashSet;
 
 use crate::core::component::{
     Component,
@@ -177,5 +178,34 @@ impl MemoryMapping {
 
     pub fn descriptor(&self) -> &MemoryMappingDescriptor {
         &self.descriptor
+    }
+
+    pub fn get_memnership(&self, components: &HashSet<Component>) -> HashSet<Group> {
+        let mut groups = HashSet::<Group>::new();
+
+        for group in &self.descriptor {
+            if group.iter().all(|x| components.contains(x)) {
+                groups.insert(components_to_group(group));
+            }
+        }
+
+        return groups;
+    }
+
+    pub fn get_next_membership(&self, previous_components: &HashSet<Component>, components_to_add: &HashSet<Component>) -> HashSet<Group> {
+        let mut previous_groups = HashSet::<Group>::new();
+        let mut new_groups = HashSet::<Group>::new();
+
+        for group in &self.descriptor {
+            if group.iter().all(|x| previous_components.contains(x)) {
+                previous_groups.insert(components_to_group(group));
+            }
+
+            if group.iter().all(|x| previous_components.contains(x) || components_to_add.contains(x)) {
+                new_groups.insert(components_to_group(group));
+            }
+        }
+
+        return new_groups.symmetric_difference(&previous_groups).cloned().collect();
     }
 }
