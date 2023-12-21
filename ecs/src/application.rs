@@ -119,7 +119,7 @@ impl Application {
 
         let id = T::id();
 
-        let mut groups = Vec::<Group>::new();
+        let mut groups = HashSet::<Group>::new();
         if !self.associated(entity, &vec![id]) {
             let components = self.entities.get_mut(entity).unwrap();
             groups = self.storage.process_add(entity, components, id);
@@ -195,7 +195,7 @@ impl Application {
 */
 
 impl Application {
-    pub fn on_startup(&mut self, groups: &Vec<Group>, entity: &Entity) {
+    pub fn on_startup(&mut self, groups: &HashSet<Group>, entity: &Entity) {
         for group in groups {
             for system in self.systems.get_mut(group).unwrap() {
                 system.on_startup(&[entity.clone()]);
@@ -203,7 +203,7 @@ impl Application {
         }
     }
 
-    pub fn on_quit(&mut self, groups: &Vec<Group>, entity: &Entity) {
+    pub fn on_quit(&mut self, groups: &HashSet<Group>, entity: &Entity) {
         for group in groups {
             for system in self.systems.get_mut(group).unwrap() {
                 system.on_quit(&[entity.clone()]);

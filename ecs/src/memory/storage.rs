@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{
+    HashMap,
+    HashSet,
+};
 
 use crate::{
     core::{
@@ -10,10 +13,12 @@ use crate::{
         },
     },
     memory::{
+        factory::Factory,
         MemoryMapping,
         MemoryMappingDescriptor,
     },
 };
+use crate::core::component::AnyComponent;
 
 struct PackedEntities {
     mapping: MemoryMapping,
@@ -24,6 +29,8 @@ struct PackedEntities {
 pub struct Storage {
     packed: PackedEntities,
     entities: HashMap<Entity, HashSet<Component>>,
+
+    factory: Factory,
 }
 
 impl PackedEntities {
@@ -56,6 +63,78 @@ impl PackedEntities {
 
     pub fn process_add(&mut self, entity: &Entity, previous_components: &HashSet<Component>, components_to_add: &HashSet<Component>) -> HashSet<Group> {
         let groups = self.mapping.get_next_membership(previous_components, components_to_add);
+        let mapped_groups = self.mapping.map_and_sort(&groups);
+
+        for (container, i) in mapped_groups {
+            let mut index = match self.indices.get_mut(container) {
+                Some(indices) => match indices.get(entity) {
+                    Some(index) => Some(index.clone()),
+                    None => match self.entities.get_mut(container) {
+                        Some(entities) => {
+                            let last = entities.len();
+
+                            entities.push(entity.clone());
+                            indices.insert(entity.clone(), last);
+
+                            Some(last)
+                        }
+                        None => None
+                    },
+                },
+                None => None
+            };
+
+            if let Some(mut index) = index {
+                for j in i.iter().rev().copied() { // Iterate over the largest set of component to the smallest
+                    let value = self.mapping.cursor(container, j);
+                    self.mapping.advance_cursor(container, j);
+
+                    index = self.swap_entities(container, index, value);
+                }
+            }
+        }
+
+        return groups;
+    }
+
+    pub fn process_remove(&mut self, entity: &Entity, components: &HashSet<Component>, components_removed: &HashSet<Component>) -> HashSet<Group> {
+        let groups = self.mapping.get_next_membership(components, components_removed);
+        let mapped_groups = self.mapping.map_and_sort(&groups);
+
+        for (container, i) in mapped_groups {
+            let mut index = match self.indices.get_mut(container) {
+                Some(indices) => match indices.get(entity) {
+                    Some(index) => Some(index.clone()),
+                    None => None
+                },
+                None => None
+            };
+
+            if let Some(mut index) = index {
+                for j in i.iter().copied() { // Iterate over the largest set of component to the smallest
+                    let value = self.mapping.cursor(container, j);
+                    self.mapping.move_back_cursor(container, j);
+
+                    index = self.swap_entities(container, index, value - 1);
+                }
+
+                // remove the entity if it's outside every groups of the container
+
+                let last_group = self.mapping.cursors(container).last().cloned();
+                if let Some(last_group) = last_group {
+                    if index >= last_group {
+                        if let Some(entities) = self.entities.get_mut(container) {
+                            entities.swap_remove(index);
+                        }
+                        if let Some(indices) = self.indices.get_mut(container) {
+                            indices.remove(entity);
+                        }
+                    }
+                }
+            }
+        }
+
+        return groups;
     }
 
     fn swap_entities(&mut self, container: usize, a: usize, b: usize) -> usize {
@@ -77,5 +156,64 @@ impl PackedEntities {
         }
 
         return b;
+    }
+}
+
+impl Storage {
+    pub fn new(descriptor: MemoryMappingDescriptor) -> Self {
+        return Self {
+            packed: PackedEntities::new(descriptor),
+            entities: HashMap::new(),
+            factory: Factory::new(),
+        };
+    }
+
+    pub fn add_get_or_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> &mut T {
+        self.try_add(entity, T::id());
+
+        return self.factory.add_get_or_get_component(entity, value);
+    }
+
+    pub fn try_add_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> bool {
+        self.try_add(entity, T::id());
+
+        return self.factory.try_add_component(entity, value);
+    }
+
+    pub fn try_get_component_mut<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
+        return self.factory.try_get_component_mut::<T>(entity);
+    }
+
+    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
+        return self.factory.try_get_component::<T>(entity);
+    }
+
+    pub fn try_remove_get_component_any(&mut self, entity: &Entity, id: Component) -> Option<Box<dyn AnyComponent>> {}
+
+    pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<T>> {}
+
+    pub fn try_remove_component_any(&mut self, entity: &Entity, id: Component) -> bool {}
+
+    pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> bool {}
+
+    fn try_add(&mut self, entity: &Entity, id: Component) -> bool {
+        if let Some(components) = self.entities.get_mut(entity) {
+            if components.contains(&id) {
+                return false;
+            }
+
+            components.insert(id);
+        } else {
+            let mut set = HashSet::new();
+            set.insert(id);
+
+            self.entities.insert(entity.clone(), set);
+        }
+
+        return true;
+    }
+
+    fn try_remove(&mut self, entity: &Entity, id: Component) -> bool {
+
     }
 }

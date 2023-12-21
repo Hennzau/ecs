@@ -15,11 +15,17 @@ use crate::{
 };
 use crate::core::entity::Entity;
 
-struct Factory {
+pub struct Factory {
     pools: HashMap<Component, Box<dyn AnyComponentPool>>,
 }
 
 impl Factory {
+    pub fn new() -> Self {
+        return Self {
+            pools: HashMap::new()
+        };
+    }
+
     pub fn add_get_or_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> &mut T {
         let pool = self.add_get_or_get_pool::<T>();
 
@@ -115,5 +121,4 @@ impl Factory {
 
         return self.try_get_pool_mut::<T>().unwrap();
     }
-
 }

@@ -131,7 +131,7 @@ impl MemoryMapping {
         }
     }
 
-    pub fn map_and_sort(&self, groups: &Vec<Group>) -> HashMap<usize, Vec<usize>> {
+    pub fn map_and_sort(&self, groups: &HashSet<Group>) -> HashMap<usize, Vec<usize>> {
         let mut result = HashMap::new();
 
         for group in groups {
@@ -178,18 +178,6 @@ impl MemoryMapping {
 
     pub fn descriptor(&self) -> &MemoryMappingDescriptor {
         &self.descriptor
-    }
-
-    pub fn get_memnership(&self, components: &HashSet<Component>) -> HashSet<Group> {
-        let mut groups = HashSet::<Group>::new();
-
-        for group in &self.descriptor {
-            if group.iter().all(|x| components.contains(x)) {
-                groups.insert(components_to_group(group));
-            }
-        }
-
-        return groups;
     }
 
     pub fn get_next_membership(&self, previous_components: &HashSet<Component>, components_to_add: &HashSet<Component>) -> HashSet<Group> {

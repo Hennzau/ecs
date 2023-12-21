@@ -73,4 +73,4 @@ you add a component to an entity, you must check the groups to which the entity 
 the map to access the storage that may require updating, and perform updates using a test-and-swap approach for each
 group, beginning from the largest to the smallest. (ABC is smaller than A because ABC encompasses A)
 
-This has been implemented in : [storage.rs](https://github.com/Hennzau/hnz/blob/main/ecs/src/application/storage.rs)
+This has been implemented in : [storage.rs](https://github.com/Hennzau/hnz/blob/main/ecs/src/memory/storage.rs)

@@ -56,7 +56,7 @@ impl MappedStorage {
         return b;
     }
 
-    fn update_new(&self, components: &HashSet<Component>, component: Component) -> Vec<Group> {
+    fn update_new(&self, components: &HashSet<Component>, component: Component) -> HashSet<Group> {
         let mut previous_groups = HashSet::<u128>::new();
         let mut new_groups = HashSet::<u128>::new();
 
@@ -73,7 +73,7 @@ impl MappedStorage {
         return new_groups.symmetric_difference(&previous_groups).cloned().collect();
     }
 
-    pub fn process_add(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) -> Vec<Group> {
+    pub fn process_add(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) -> HashSet<Group> {
         let groups = self.update_new(components, component);
         let mapped_groups = self.mapping.map_and_sort(&groups);
 
@@ -100,7 +100,7 @@ impl MappedStorage {
         return groups;
     }
 
-    fn update_remove(&self, components: &HashSet<Component>, component: Component) -> Vec<Group> {
+    fn update_remove(&self, components: &HashSet<Component>, component: Component) -> HashSet<Group> {
         let mut previous_groups = HashSet::<u128>::new();
         let mut new_groups = HashSet::<u128>::new();
 
@@ -117,7 +117,7 @@ impl MappedStorage {
         return new_groups.symmetric_difference(&previous_groups).cloned().collect();
     }
 
-    pub fn process_remove(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) -> Vec<Group> {
+    pub fn process_remove(&mut self, entity: &Entity, components: &HashSet<Component>, component: Component) -> HashSet<Group> {
         let groups = self.update_remove(components, component);
         let mapped_groups = self.mapping.map_and_sort(&groups);
 
