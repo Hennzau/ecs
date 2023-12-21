@@ -188,13 +188,29 @@ impl Storage {
         return self.factory.try_get_component::<T>(entity);
     }
 
-    pub fn try_remove_get_component_any(&mut self, entity: &Entity, id: Component) -> Option<Box<dyn AnyComponent>> {}
+    pub fn try_remove_get_component_any(&mut self, entity: &Entity, id: Component) -> Option<Box<dyn AnyComponent>> {
+        self.try_remove(entity, id);
 
-    pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<T>> {}
+        return self.factory.try_remove_get_component_any(entity, id);
+    }
 
-    pub fn try_remove_component_any(&mut self, entity: &Entity, id: Component) -> bool {}
+    pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<T>> {
+        self.try_remove(entity, T::id());
 
-    pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> bool {}
+        return self.factory.try_remove_get_component::<T>(entity);
+    }
+
+    pub fn try_remove_component_any(&mut self, entity: &Entity, id: Component) -> bool {
+        self.try_remove(entity, id);
+
+        return self.factory.try_remove_component_any(entity, id);
+    }
+
+    pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> bool {
+        self.try_remove(entity, T::id());
+
+        return self.factory.try_remove_component::<T>(entity);
+    }
 
     fn try_add(&mut self, entity: &Entity, id: Component) -> bool {
         if let Some(components) = self.entities.get_mut(entity) {
@@ -214,6 +230,16 @@ impl Storage {
     }
 
     fn try_remove(&mut self, entity: &Entity, id: Component) -> bool {
+        if let Some(components) = self.entities.get_mut(entity) {
+            if !components.contains(&id) {
+                return false;
+            }
 
+            components.remove(&id);
+
+            return true;
+        }
+
+        return false;
     }
 }
