@@ -36,20 +36,6 @@ impl Factory {
         return pool.try_add(entity, value);
     }
 
-    pub fn try_get_component_mut<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
-        return match self.try_get_pool_mut::<T>() {
-            Some(pool) => pool.try_get_mut(entity),
-            None => None
-        };
-    }
-
-    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
-        return match self.try_get_pool::<T>() {
-            Some(pool) => pool.try_get(entity),
-            None => None
-        };
-    }
-
     pub fn try_remove_get_component_any(&mut self, entity: &Entity, id: Component) -> Option<Box<dyn AnyComponent>> {
         return match self.try_get_pool_any_mut(id) {
             Some(pool) => pool.try_remove_get_any(entity),
@@ -78,6 +64,20 @@ impl Factory {
         return match self.try_get_pool_any_mut(id) {
             Some(pool) => pool.try_remove(entity),
             None => false
+        };
+    }
+
+    pub fn try_get_component_mut<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
+        return match self.try_get_pool_mut::<T>() {
+            Some(pool) => pool.try_get_mut(entity),
+            None => None
+        };
+    }
+
+    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
+        return match self.try_get_pool::<T>() {
+            Some(pool) => pool.try_get(entity),
+            None => None
         };
     }
 

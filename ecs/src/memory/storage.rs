@@ -167,6 +167,18 @@ impl Storage {
         };
     }
 
+    pub fn push_entity(&mut self, id: u64) {
+        self.entities.insert(id as Entity, HashSet::new());
+    }
+
+    pub fn entities(&self) -> &Vec<Vec<Entity>> {
+        return self.packed.entities();
+    }
+
+    pub fn view(&self, group: Group) -> &[Entity] {
+        return self.packed.view(group);
+    }
+
     pub fn add_get_or_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> (&mut T, HashSet<Group>) {
         let mut groups = HashSet::<Group>::new();
         let components = self.entities.get(entity).cloned();
@@ -193,20 +205,12 @@ impl Storage {
         return (self.factory.try_add_component(entity, value), groups);
     }
 
-    pub fn try_get_component_mut<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
-        return self.factory.try_get_component_mut::<T>(entity);
-    }
-
-    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
-        return self.factory.try_get_component::<T>(entity);
-    }
-
     pub fn try_remove_get_component_any(&mut self, entity: &Entity, id: Component) -> (Option<Box<dyn AnyComponent>>, HashSet<Group>) {
         let mut groups = HashSet::<Group>::new();
 
         if self.try_remove(entity, id) {
             if let Some(components) = self.entities.get(entity) {
-                groups = self.packed.process_remove(entity, components, &HashSet::from ([id]));
+                groups = self.packed.process_remove(entity, components, &HashSet::from([id]));
             }
         }
 
@@ -230,7 +234,7 @@ impl Storage {
 
         if self.try_remove(entity, id) {
             if let Some(components) = self.entities.get(entity) {
-                groups = self.packed.process_remove(entity, components, &HashSet::from ([id]));
+                groups = self.packed.process_remove(entity, components, &HashSet::from([id]));
             }
         }
 
@@ -247,6 +251,14 @@ impl Storage {
         }
 
         return (self.factory.try_remove_component::<T>(entity), groups);
+    }
+
+    pub fn try_get_component_mut<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
+        return self.factory.try_get_component_mut::<T>(entity);
+    }
+
+    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
+        return self.factory.try_get_component::<T>(entity);
     }
 
     fn try_add(&mut self, entity: &Entity, id: Component) -> bool {
