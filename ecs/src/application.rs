@@ -29,17 +29,6 @@ pub struct Application {
     systems: HashMap<Group, Vec<Box<dyn System>>>,
 }
 
-/// Implementation of debug functions
-impl Application {
-    pub fn entities(&self) -> &Vec<Vec<Entity>> {
-        return self.storage.entities();
-    }
-
-    pub fn view(&self, group: Group) -> &[Entity] {
-        return self.storage.view(group);
-    }
-}
-
 /// Implementation of general functions
 impl Application {
     pub fn new(systems: Vec<Box<dyn System>>) -> Self {
@@ -77,7 +66,7 @@ impl Application {
         let starting_time = time::Instant::now();
         let mut previous_time = 0f32;
 
-        let limit = time::Duration::from_secs(2);
+        let limit = time::Duration::from_secs(1);
 
         loop {
             if starting_time.elapsed() >= limit { break; }
@@ -153,7 +142,7 @@ impl Application {
         let mut sub_app = SubApp::new(&mut self.storage);
 
         for group in groups {
-            let entities = Vec::from(sub_app.view(group.clone()));
+            let entities = sub_app.view(group.clone());
 
             if let Some(systems) = self.systems.get_mut(group) {
                 for system in systems {
@@ -164,8 +153,10 @@ impl Application {
     }
 
     fn launch_quit_systems(&mut self, groups: &HashSet<Group>, entities: &[Entity]) {
+        let mut sub_app = SubApp::new(&mut self.storage);
+
         for group in groups {
-            let entities = Vec::from(self.view(group.clone()));
+            let entities = sub_app.view(group.clone());
 
             if let Some(systems) = self.systems.get_mut(group) {
                 for system in systems {
@@ -179,7 +170,7 @@ impl Application {
         let mut sub_app = SubApp::new(&mut self.storage);
 
         for (group, systems) in &mut self.systems {
-            let entities = Vec::from(sub_app.view(group.clone()));
+            let entities = sub_app.view(group.clone());
 
             for system in systems {
                 system.on_update(delta_time, &entities, &mut sub_app);

@@ -29,7 +29,7 @@ pub struct Storage {
     packed: PackedEntities,
     entities: HashMap<Entity, HashSet<Component>>,
 
-    factory: Factory,
+    pub factory: Factory,
 }
 
 impl PackedEntities {
