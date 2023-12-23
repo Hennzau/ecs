@@ -20,6 +20,6 @@ pub trait System {
     }
 
     fn on_startup(&mut self, entities: &[Entity], app: &mut SubApp) {}
-    fn on_update(&mut self, entities: &[Entity], app: &mut SubApp) {}
-    fn on_quit(&mut self, entities: &[Entity], app: &mut SubApp) {}
+    fn on_update(&mut self, delta_time: f32, entities: &[Entity], app: &mut SubApp) {}
+    fn on_quit(&mut self, entities: &[Entity]) {}
 }

@@ -21,6 +21,10 @@ impl SubApp<'_> {
         };
     }
 
+    pub fn view(&self, group: Group) -> &[Entity] {
+        return self.storage.view(group);
+    }
+
     pub fn try_get_component_mut<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
         return self.storage.try_get_component_mut::<T>(entity);
     }
