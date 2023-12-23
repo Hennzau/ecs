@@ -13,7 +13,7 @@ use crate::core::sub_app::SubApp;
 use crate::memory::storage::Storage;
 
 pub trait System {
-    fn components(&self) -> Vec<u64>;
+    fn components(&self) -> Vec<Component>;
 
     fn id(&self) -> Group {
         components_to_group(&self.components())

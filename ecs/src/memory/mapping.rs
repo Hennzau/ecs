@@ -6,15 +6,15 @@
 use std::{
     cmp::Ordering,
     collections::{
-        HashMap, VecDeque
-    }
+        HashMap, VecDeque,
+    },
 };
 use std::collections::HashSet;
 
 use crate::core::component::{
     Component,
     Group,
-    components_to_group
+    components_to_group,
 };
 
 use crate::memory::graph::BipartiteGroupsGraph;
@@ -52,6 +52,8 @@ impl MemoryMapping {
         for i in 0..descriptor.len() {
             let a = components_to_group(descriptor.get(i).unwrap()) as i128;
 
+            graph.add_couple(a, -a); // You must add vertices even if they are not connected to one other.
+
             for j in 0..i {
                 let b = components_to_group(descriptor.get(j).unwrap()) as i128;
 
@@ -62,6 +64,7 @@ impl MemoryMapping {
         }
 
         graph.compute();
+
 
         /* Now read the output of the graph and create the correct mapping */
 

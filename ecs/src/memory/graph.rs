@@ -1,6 +1,6 @@
 use std::collections::{
     HashMap,
-    VecDeque
+    VecDeque,
 };
 
 pub struct BipartiteGroupsGraph {
@@ -24,6 +24,22 @@ impl BipartiteGroupsGraph {
             layer_two: HashMap::new(),
             layer_one_neighbours: HashMap::new(),
             distances: HashMap::new(),
+        }
+    }
+
+    pub fn add_couple(&mut self, a: i128, b: i128) {
+        if !self.layer_one_neighbours.contains_key(&a) {
+            self.layer_one_neighbours.insert(a, Vec::new());
+        }
+
+        if !self.layer_one.contains_key(&a) {
+            self.layer_one.insert(a, None);
+            self.distances.insert(Some(a), u32::MAX);
+        }
+
+        if !self.layer_two.contains_key(&b) {
+            self.layer_two.insert(b, None);
+            self.distances.insert(Some(b), u32::MAX);
         }
     }
 
