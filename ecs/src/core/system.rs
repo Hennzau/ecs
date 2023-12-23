@@ -1,16 +1,12 @@
-use std::collections::HashMap;
-
 use crate::core::{
     entity::Entity,
     component::{
         Component,
-        AnyComponent,
         Group,
         components_to_group,
     },
+    sub_app::SubApp,
 };
-use crate::core::sub_app::SubApp;
-use crate::memory::storage::Storage;
 
 pub trait System {
     fn components(&self) -> Vec<Component>;
@@ -19,7 +15,7 @@ pub trait System {
         components_to_group(&self.components())
     }
 
-    fn on_startup(&mut self, entities: &[Entity], app: &mut SubApp) {}
-    fn on_update(&mut self, delta_time: f32, entities: &[Entity], app: &mut SubApp) {}
-    fn on_quit(&mut self, entities: &[Entity]) {}
+    fn on_startup(&mut self, _entities: &[Entity], _app: &mut SubApp) {}
+    fn on_update(&mut self, _delta_time: f32, _entities: &[Entity], _app: &mut SubApp) {}
+    fn on_quit(&mut self, _entities: &[Entity]) {}
 }

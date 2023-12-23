@@ -142,25 +142,19 @@ impl Application {
         let mut sub_app = SubApp::new(&mut self.storage);
 
         for group in groups {
-            let entities = sub_app.view(group.clone());
-
             if let Some(systems) = self.systems.get_mut(group) {
                 for system in systems {
-                    system.on_startup(&entities, &mut sub_app);
+                    system.on_startup(entities, &mut sub_app);
                 }
             }
         }
     }
 
     fn launch_quit_systems(&mut self, groups: &HashSet<Group>, entities: &[Entity]) {
-        let mut sub_app = SubApp::new(&mut self.storage);
-
         for group in groups {
-            let entities = sub_app.view(group.clone());
-
             if let Some(systems) = self.systems.get_mut(group) {
                 for system in systems {
-                    system.on_quit(&entities);
+                    system.on_quit(entities);
                 }
             }
         }

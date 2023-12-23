@@ -3,7 +3,6 @@ use crate::{
     core::{
         entity::Entity,
         component::{
-            Component,
             AnyComponent,
             Group,
         },
@@ -22,7 +21,7 @@ impl SubApp<'_> {
     }
 
     pub fn view(&self, group: Group) -> Vec<Entity> {
-        return Vec::from (self.storage.view(group));
+        return Vec::from(self.storage.view(group));
     }
 
     pub fn try_get_component_mut<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
