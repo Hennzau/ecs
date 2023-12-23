@@ -3,18 +3,18 @@ use std::collections::{HashMap, HashSet};
 use crate::{
     core::{
         component::{
+            AnyComponent,
             Component,
             Group,
         },
+        entity::Entity,
         system::System,
     },
-    memory::{
-        storage::Storage,
-        MemoryMappingDescriptor,
-    },
+    memory::storage::Storage,
 };
-use crate::core::component::AnyComponent;
-use crate::core::entity::Entity;
+use crate::core::sub_app::SubApp;
+
+pub mod prelude;
 
 pub struct Application {
     storage: Storage,
@@ -23,6 +23,18 @@ pub struct Application {
     systems: HashMap<Group, Vec<Box<dyn System>>>,
 }
 
+/// Implementation of debug functions
+impl Application {
+    pub fn entities(&self) -> &Vec<Vec<Entity>> {
+        return self.storage.entities();
+    }
+
+    pub fn view(&self, group: Group) -> &[Entity] {
+        return self.storage.view(group);
+    }
+}
+
+/// Implementation of general functions
 impl Application {
     pub fn new(systems: Vec<Box<dyn System>>) -> Self {
         let mut descriptor = Vec::<Vec<Component>>::new();
@@ -53,14 +65,6 @@ impl Application {
         self.next += 1;
 
         return self.next - 1;
-    }
-
-    pub fn entities(&self) -> &Vec<Vec<Entity>> {
-        return self.storage.entities();
-    }
-
-    pub fn view(&self, group: Group) -> &[Entity] {
-        return self.storage.view(group);
     }
 
     pub fn add_get_or_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> &mut T {
@@ -105,5 +109,14 @@ impl Application {
 
     pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
         return self.storage.try_get_component::<T>(entity);
+    }
+}
+
+/// Implementation of systems functions
+impl Application {
+    fn on_startup(&mut self, groups: &HashSet<Group>, entities: &[Entity]) {
+        let mut sub_app = SubApp::new(&mut self.storage);
+
+
     }
 }
