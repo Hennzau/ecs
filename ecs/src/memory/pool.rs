@@ -1,9 +1,11 @@
 use std::{
     any::Any,
     collections::HashMap,
-    ops::DerefMut
+    ops::{
+        DerefMut,
+        Deref,
+    },
 };
-use std::ops::Deref;
 
 use crate::core::{
     entity::Entity,

@@ -7,6 +7,7 @@ use crate::{
     core::{
         component::{
             Component,
+            AnyComponent,
             Group,
         },
         entity::Entity,
@@ -17,7 +18,6 @@ use crate::{
         MemoryMappingDescriptor,
     },
 };
-use crate::core::component::AnyComponent;
 
 struct PackedEntities {
     mapping: MemoryMapping,
@@ -67,7 +67,7 @@ impl PackedEntities {
         for (container, i) in mapped_groups {
             let index = match self.indices.get_mut(container) {
                 Some(indices) => match indices.get(entity) {
-                    Some(index) => Some(index.clone()),
+                    Some(index) => Ok(index.clone()),
                     None => match self.entities.get_mut(container) {
                         Some(entities) => {
                             let last = entities.len();
@@ -75,22 +75,28 @@ impl PackedEntities {
                             entities.push(entity.clone());
                             indices.insert(entity.clone(), last);
 
-                            Some(last)
+                            Ok(last)
                         }
-                        None => None
+                        None => Err(format!("No entities for container {}!", container))
                     },
                 },
-                None => None
+                None => Err(format!("No indices for container {}!", container))
             };
 
-            if let Some(mut index) = index {
-                for j in i.iter().rev().copied() { // Iterate over the largest set of component to the smallest
-                    let value = self.mapping.cursor(container, j);
-                    self.mapping.advance_cursor(container, j);
+            match index {
+                Ok(mut index) => {
+                    for j in i.iter().rev().copied() { // Iterate over the largest set of component to the smallest
+                        let value = self.mapping.cursor(container, j);
+                        self.mapping.advance_cursor(container, j);
 
-                    index = self.swap_entities(container, index, value);
+                        index = self.swap_entities(container, index, value);
+                    }
                 }
-            }
+
+                Err(e) => {
+                    log::warn!("{}",e);
+                }
+            };
         }
 
         return groups;
@@ -103,34 +109,40 @@ impl PackedEntities {
         for (container, i) in mapped_groups {
             let index = match self.indices.get_mut(container) {
                 Some(indices) => match indices.get(entity) {
-                    Some(index) => Some(index.clone()),
-                    None => None
+                    Some(index) => Ok(index.clone()),
+                    None => Err(format!("Entity {} was not mapped in indices for container {}", entity, container))
                 },
-                None => None
+                None => Err(format!("No indices for container {}!", container))
             };
 
-            if let Some(mut index) = index {
-                for j in i.iter().copied() { // Iterate over the largest set of component to the smallest
-                    let value = self.mapping.cursor(container, j);
-                    self.mapping.move_back_cursor(container, j);
+            match index {
+                Ok(mut index) => {
+                    for j in i.iter().copied() { // Iterate over the largest set of component to the smallest
+                        let value = self.mapping.cursor(container, j);
+                        self.mapping.move_back_cursor(container, j);
 
-                    index = self.swap_entities(container, index, value - 1);
-                }
+                        index = self.swap_entities(container, index, value - 1);
+                    }
 
-                // remove the entity if it's outside every groups of the container
+                    // remove the entity if it's outside every groups of the container
 
-                let last_group = self.mapping.cursors(container).last().cloned();
-                if let Some(last_group) = last_group {
-                    if index >= last_group {
-                        if let Some(entities) = self.entities.get_mut(container) {
-                            entities.swap_remove(index);
-                        }
-                        if let Some(indices) = self.indices.get_mut(container) {
-                            indices.remove(entity);
+                    let last_group = self.mapping.cursors(container).last().cloned();
+                    if let Some(last_group) = last_group {
+                        if index >= last_group {
+                            if let Some(entities) = self.entities.get_mut(container) {
+                                entities.swap_remove(index);
+                            }
+                            if let Some(indices) = self.indices.get_mut(container) {
+                                indices.remove(entity);
+                            }
                         }
                     }
                 }
-            }
+
+                Err(e) => {
+                    log::warn!("{}", e);
+                }
+            };
         }
 
         return groups;
