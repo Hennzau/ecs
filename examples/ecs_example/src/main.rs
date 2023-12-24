@@ -73,12 +73,11 @@ impl System for ShowPosition {
 }
 
 fn main() {
-    let mut app = Application::new(vec![
-        Box::new(ApplyMovement {}),
-        Box::new(ShowPosition {
-            global_time: 0f32
-        }),
-    ]);
+    let mut builder = AppBuilder::new();
+    builder.add(ApplyMovement {});
+    builder.add(ShowPosition { global_time: 0f32 });
+
+    let mut app = builder.build();
 
     let window = app.spawn();
     app.try_add_component(&window, Position2D { x: 0f32, y: 0f32 });

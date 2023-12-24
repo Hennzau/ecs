@@ -21,6 +21,7 @@ use crate::{
 use crate::core::sub_app::SubApp;
 
 pub mod prelude;
+pub mod app_builder;
 
 pub struct Application {
     storage: Storage,

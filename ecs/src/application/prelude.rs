@@ -1,5 +1,8 @@
 pub use crate::{
-    application::Application,
+    application::{
+        Application,
+        app_builder::AppBuilder,
+    },
     core::{
         component::{
             AnyComponent,
