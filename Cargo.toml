@@ -9,3 +9,4 @@ description = "hnz development repository"
 [dependencies]
 ecs = { path = "ecs" }
 wsh = { path = "wsh" }
+maths = { path = "maths" }
