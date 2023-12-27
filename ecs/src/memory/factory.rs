@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 
 use crate::{
-    core::component::{
-        Component,
-        AnyComponent,
+    core::{
+        entity::Entity,
+        component::{
+            Component,
+            AnyComponent,
+        },
     },
     memory::pool::{
         ComponentPool,
         AnyComponentPool,
     },
 };
-use crate::core::entity::Entity;
 
 pub struct Factory {
     pools: HashMap<Component, Box<dyn AnyComponentPool>>,

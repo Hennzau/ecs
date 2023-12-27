@@ -13,10 +13,7 @@ use crate::{
             Component,
             Group,
         },
-        entity::{
-            Entity,
-            Batch,
-        },
+        entity::Entity,
         system::System,
         sub_app::SubApp,
     },
@@ -66,8 +63,8 @@ impl Application {
         return self.next - 1;
     }
 
-    pub fn spawn_batch(&mut self, count: usize) -> Batch {
-        let mut result = Batch::new();
+    pub fn spawn_multiple(&mut self, count: usize) -> Vec<Entity> {
+        let mut result = Vec::<Entity>::new();
 
         for _ in 0..count {
             result.push(self.spawn());

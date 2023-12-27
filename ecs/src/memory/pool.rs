@@ -12,30 +12,18 @@ use crate::core::{
     component::AnyComponent,
 };
 
-/*
-    Components pools are distinguished by the type of their components
-    This is the global trait to recognized a pool and use it without the need to know the type
-    of the pool
-*/
-
+/// Components pools are distinguished by the type of their components
+/// This is the global trait to recognized a pool and use it without the need to know the type
+/// of the pool
 pub trait AnyComponentPool {
-    /*
-        Gives the possibility to downcast a Component Pool
-    */
-
+    /// Those functions give the possibility to downcast a component pool and hidding their type
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn as_any(&self) -> &dyn Any;
 
-    /*
-        Check if the Component Pool contains a component for this entity
-    */
-
+    /// Check if the pool contains a component for this entity
     fn contains(&self, entity: &Entity) -> bool;
 
-    /*
-        Remove a component from this Component Pool and keep the Vec packed
-    */
-
+    /// Remove a component from this Component Pool and keep the Vec packed
     fn swap(&mut self, a: &Entity, b: &Entity);
 
     fn try_remove_get_any(&mut self, entity: &Entity) -> Option<Box<dyn AnyComponent>>;
