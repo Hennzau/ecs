@@ -13,12 +13,15 @@ use crate::{
             Component,
             Group,
         },
-        entity::Entity,
+        entity::{
+            Entity,
+            Batch,
+        },
         system::System,
+        sub_app::SubApp,
     },
     memory::storage::Storage,
 };
-use crate::core::sub_app::SubApp;
 
 pub mod prelude;
 pub mod app_builder;
@@ -63,11 +66,21 @@ impl Application {
         return self.next - 1;
     }
 
+    pub fn spawn_batch(&mut self, count: usize) -> Batch {
+        let mut result = Batch::new();
+
+        for _ in 0..count {
+            result.push(self.spawn());
+        }
+
+        return result;
+    }
+
     pub fn run(&mut self) {
         let starting_time = time::Instant::now();
         let mut previous_time = 0f32;
 
-        let limit = time::Duration::from_secs(1);
+        let limit = time::Duration::from_secs(5);
 
         loop {
             if starting_time.elapsed() >= limit { break; }

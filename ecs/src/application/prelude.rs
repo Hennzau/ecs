@@ -9,7 +9,10 @@ pub use crate::{
             Component,
             ComponentBuilder,
         },
-        entity::Entity,
+        entity::{
+            Entity,
+            Batch,
+        },
         system::System,
         sub_app::SubApp,
     },
