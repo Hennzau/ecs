@@ -17,14 +17,21 @@ use crate::{
         system::System,
         sub_app::SubApp,
     },
-    memory::storage::Storage,
+    memory::{
+        factory::Factory,
+        storage::PackedEntities,
+        helper,
+    },
 };
 
 pub mod prelude;
 pub mod app_builder;
 
 pub struct Application {
-    storage: Storage,
+    components: HashMap<Entity, HashSet<Component>>,
+    entities: PackedEntities,
+    factory: Factory,
+
     next: u64,
 
     systems: HashMap<Group, Vec<Box<dyn System>>>,
@@ -50,14 +57,16 @@ impl Application {
         }
 
         return Self {
-            storage: Storage::new(descriptor),
+            components: HashMap::new(),
+            entities: PackedEntities::new(descriptor),
+            factory: Factory::new(),
             next: 0,
             systems: mapped_systems,
         };
     }
 
     pub fn spawn(&mut self) -> Entity {
-        self.storage.push_entity(self.next);
+        helper::push_entity(&mut self.components, self.next);
         self.next += 1;
 
         return self.next - 1;
@@ -77,7 +86,7 @@ impl Application {
         let starting_time = time::Instant::now();
         let mut previous_time = 0f32;
 
-        let limit = time::Duration::from_secs(5);
+        let limit = time::Duration::from_secs(1);
 
         loop {
             if starting_time.elapsed() >= limit { break; }
@@ -91,15 +100,15 @@ impl Application {
     }
 
     pub fn add_get_or_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> &mut T {
-        let (_, groups) = self.storage.add_get_or_get_component(entity, value);
+        let (_, groups) = helper::add_get_or_get_component(&mut self.components, &mut self.entities, &mut self.factory, entity, value);
 
         self.launch_startup_systems(&groups, &[entity.clone()]);
 
-        return self.storage.try_get_component_mut::<T>(entity).unwrap();
+        return self.factory.try_get_component_mut::<T>(entity).unwrap();
     }
 
     pub fn try_add_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> bool {
-        let (result, groups) = self.storage.try_add_component(entity, value);
+        let (result, groups) = helper::try_add_component(&mut self.components, &mut self.entities, &mut self.factory, entity, value);
 
         self.launch_startup_systems(&groups, &[entity.clone()]);
 
@@ -107,7 +116,7 @@ impl Application {
     }
 
     pub fn try_remove_get_component_any(&mut self, entity: &Entity, id: Component) -> Option<Box<dyn AnyComponent>> {
-        let (component, groups) = self.storage.try_remove_get_component_any(entity, id);
+        let (component, groups) = helper::try_remove_get_component_any(&mut self.components, &mut self.entities, &mut self.factory, entity, id);
 
         self.launch_quit_systems(&groups, &[entity.clone()]);
 
@@ -115,7 +124,7 @@ impl Application {
     }
 
     pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<T>> {
-        let (component, groups) = self.storage.try_remove_get_component::<T>(entity);
+        let (component, groups) = helper::try_remove_get_component::<T>(&mut self.components, &mut self.entities, &mut self.factory, entity);
 
         self.launch_quit_systems(&groups, &[entity.clone()]);
 
@@ -123,7 +132,7 @@ impl Application {
     }
 
     pub fn try_remove_component_any(&mut self, entity: &Entity, id: Component) -> bool {
-        let (result, groups) = self.storage.try_remove_component_any(entity, id);
+        let (result, groups) = helper::try_remove_component_any(&mut self.components, &mut self.entities, &mut self.factory, entity, id);
 
         self.launch_quit_systems(&groups, &[entity.clone()]);
 
@@ -131,7 +140,7 @@ impl Application {
     }
 
     pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> bool {
-        let (result, groups) = self.storage.try_remove_component::<T>(entity);
+        let (result, groups) = helper::try_remove_component::<T>(&mut self.components, &mut self.entities, &mut self.factory, entity);
 
         self.launch_quit_systems(&groups, &[entity.clone()]);
 
@@ -139,18 +148,18 @@ impl Application {
     }
 
     pub fn try_get_component_mut<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
-        return self.storage.try_get_component_mut::<T>(entity);
+        return self.factory.try_get_component_mut::<T>(entity);
     }
 
     pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
-        return self.storage.try_get_component::<T>(entity);
+        return self.factory.try_get_component::<T>(entity);
     }
 }
 
 /// Implementation of systems functions
 impl Application {
     fn launch_startup_systems(&mut self, groups: &HashSet<Group>, entities: &[Entity]) {
-        let mut sub_app = SubApp::new(&mut self.storage);
+        let mut sub_app = SubApp::new(&mut self.factory);
 
         for group in groups {
             if let Some(systems) = self.systems.get_mut(group) {
@@ -172,10 +181,10 @@ impl Application {
     }
 
     fn update_all_systems(&mut self, delta_time: f32) {
-        let mut sub_app = SubApp::new(&mut self.storage);
+        let mut sub_app = SubApp::new(&mut self.factory);
 
         for (group, systems) in &mut self.systems {
-            let entities = sub_app.view(group.clone());
+            let entities = self.entities.view(group.clone());
 
             for system in systems {
                 system.on_update(delta_time, &entities, &mut sub_app);
