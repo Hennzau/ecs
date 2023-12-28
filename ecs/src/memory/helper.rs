@@ -15,14 +15,8 @@ use crate::{
     memory::{
         factory::Factory,
         storage::PackedEntities,
-        MemoryMapping,
-        MemoryMappingDescriptor,
     },
 };
-
-pub fn push_entity(components: &mut HashMap<Entity, HashSet<Component>>, id: u64) {
-    components.insert(id as Entity, HashSet::new());
-}
 
 pub fn add_get_or_get_component<'a, T: AnyComponent + 'static>(components: &mut HashMap<Entity, HashSet<Component>>, packed: &mut PackedEntities, factory: &'a mut Factory, entity: &Entity, value: T) -> (&'a mut T, HashSet<Group>) {
     let mut groups = HashSet::<Group>::new();

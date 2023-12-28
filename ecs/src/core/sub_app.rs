@@ -2,10 +2,7 @@ use crate::{
     memory::factory::Factory,
     core::{
         entity::Entity,
-        component::{
-            AnyComponent,
-            Group,
-        },
+        component::AnyComponent,
     },
 };
 

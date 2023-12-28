@@ -66,7 +66,7 @@ impl Application {
     }
 
     pub fn spawn(&mut self) -> Entity {
-        helper::push_entity(&mut self.components, self.next);
+        self.components.insert(self.next as Entity, HashSet::new());
         self.next += 1;
 
         return self.next - 1;

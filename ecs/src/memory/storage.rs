@@ -7,13 +7,11 @@ use crate::{
     core::{
         component::{
             Component,
-            AnyComponent,
             Group,
         },
         entity::Entity,
     },
     memory::{
-        factory::Factory,
         MemoryMapping,
         MemoryMappingDescriptor,
     },
