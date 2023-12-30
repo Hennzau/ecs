@@ -1,21 +1,22 @@
 use crate::core::{
-    entity::Entity,
+    component,
     component::{
-        Component,
+        ComponentID,
         Group,
-        components_to_group,
     },
-    sub_app::SubApp,
 };
 
+/// In ECS paradigms everything can be seen as a unique identifier
+pub type SystemID = u64;
+
+/// General trait that must be implemented for structs that must be understand as System
 pub trait System {
-    fn components(&self) -> Vec<Component>;
+    /// This function provides a way to know which components each system wants to use
+    fn components(&self) -> &[ComponentID];
 
-    fn id(&self) -> Group {
-        components_to_group(&self.components())
+    /// Each system belongs to a certain group. Every system that use the same set of components
+    /// are in the same group
+    fn group(&self) -> Group {
+        component::components_to_group(&self.components())
     }
-
-    fn on_startup(&mut self, _entities: &[Entity], _app: &mut SubApp) {}
-    fn on_update(&mut self, _delta_time: f32, _entities: &[Entity], _app: &mut SubApp) {}
-    fn on_quit(&mut self, _entities: &[Entity]) {}
 }

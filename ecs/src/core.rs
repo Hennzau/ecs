@@ -1,4 +1,5 @@
+/// Those are the 3 parts of the ECS (Entity, Component, System)
+
 pub mod entity;
-pub mod system;
 pub mod component;
-pub mod sub_app;
+pub mod system;

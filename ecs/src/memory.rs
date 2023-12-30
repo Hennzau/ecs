@@ -1,13 +1,4 @@
-/*
-This is the main module for stocking entities in different memory, in order to iterate over them efficiently
- */
+/// This sub-crate provides algorithms and functions to smartly sort entities, components and systems
+/// in order to provide fast-access to them, without the need of massive iterate-testing.
 
-mod graph;
-mod mapping;
-mod pool;
-pub mod factory;
-pub mod storage;
-pub mod helper;
-
-pub use mapping::MemoryMapping;
-pub use mapping::MemoryMappingDescriptor;
+pub mod entities;
