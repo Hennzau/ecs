@@ -26,6 +26,7 @@ use crate::{
 
 pub mod prelude;
 pub mod app_builder;
+pub mod event;
 
 pub struct Application {
     components: HashMap<Entity, HashSet<Component>>,
