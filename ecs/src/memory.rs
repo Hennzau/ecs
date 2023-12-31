@@ -2,3 +2,4 @@
 /// in order to provide fast-access to them, without the need of massive iterate-testing.
 
 pub mod entities;
+mod mapping;

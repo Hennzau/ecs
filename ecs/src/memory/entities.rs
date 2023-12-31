@@ -13,7 +13,12 @@ use crate::core::
 /// This is the struct that contains Entities for the application
 pub struct PackedEntities {
     /// This is a 'packed/dense' array of all entities for the current application. This array will
-    /// be kept sorted using different algorithms and principles
+    /// be kept sorted using different algorithms and principles. An example of what this array looks
+    /// like is :
+    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    /// | 2 | 4 | 1 | 7 | 8 | 9 | 3 | 2 | 9 | 11| 4 | 5 | 6 | 9 |
+    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    /// where every integer is a unique identifier that refers to an entity.
     entities: Vec<Entity>,
 
     /// This 'groups' array represents the distribution and separation of entities inside the packed
