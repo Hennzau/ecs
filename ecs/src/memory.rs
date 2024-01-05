@@ -3,3 +3,4 @@
 
 pub mod entities;
 mod mapping;
+mod flat;
