@@ -2,5 +2,5 @@
 /// in order to provide fast-access to them, without the need of massive iterate-testing.
 
 pub mod entities;
+pub mod new_entities;
 mod mapping;
-mod flat;
