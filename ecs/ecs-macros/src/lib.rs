@@ -28,7 +28,7 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
 
                 id_str.hash(&mut hasher);
 
-                hasher.finish()
+                return hasher.finish();
             }
         }
     };

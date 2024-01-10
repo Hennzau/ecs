@@ -92,19 +92,15 @@ pub mod entities_errors {
 }
 
 impl Entities {
-    pub fn new() -> Self {
+    /// Creates a new instance initializing internal data structures based on provided groups and mapping.
+    pub fn new(groups: Vec<Vec<usize>>, map: HashMap<Group, (usize, usize)>) -> Self {
         let mut entities = Vec::new();
-        let mut groups = Vec::new();
         let mut indices = Vec::new();
-        let mut map = HashMap::new();
 
-        entities.push(Vec::new());
-        indices.push(HashMap::new());
-        groups.push(vec![0, 0, 0]);
-
-        map.insert(0, (0, 0));
-        map.insert(1, (0, 1));
-        map.insert(2, (0, 2));
+        for _ in 0..groups.len() {
+            entities.push(Vec::new());
+            indices.push(HashMap::new());
+        }
 
         return Self {
             entities: entities,
@@ -147,7 +143,7 @@ impl Entities {
     /// This function returns Ok(()) if all 'entities' are successfully associated with the specified 'group'.
     /// If any issues occur or inconsistencies are detected, it will return an Error indicating the problematic group.
     pub fn try_add_group(&mut self, group: Group, entities: &[Entity]) -> entities_errors::Result {
-        /// This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
+        // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
             Some((index, in_index)) => match self.indices.get_mut(index) {
                 Some(indices) => match self.entities.get_mut(index) {
@@ -201,7 +197,7 @@ impl Entities {
     /// the following action: if the entity exists in the nested groups, it will relocate it at the end of each nested group
     /// to finally remove it from the packed array
     pub fn try_remove_group(&mut self, group: Group, entities: &[Entity]) -> entities_errors::Result {
-        /// This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
+        // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
             Some((index, in_index)) => match self.indices.get_mut(index) {
                 Some(indices) => match self.entities.get_mut(index) {
