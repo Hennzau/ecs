@@ -38,22 +38,22 @@ pub struct Entities {
 
 /// This submodule comprises various structures designed to manage errors encountered during
 /// entity swapping and group addition processes.
-pub mod errors {
+pub mod entities_errors {
     use std::{
         error,
         fmt::{
             Display,
-            Formatter
-        }
+            Formatter,
+        },
     };
 
     use crate::core::component::Group;
 
-    pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
+    pub type Result = std::result::Result<(), Box<dyn error::Error>>;
 
     #[derive(Debug, Clone)]
     pub struct GroupMappingError {
-        pub group: Group
+        pub group: Group,
     }
 
     impl Display for GroupMappingError {
@@ -66,7 +66,7 @@ pub mod errors {
 
     #[derive(Debug, Clone)]
     pub struct EntitiesMappingError {
-        pub group: Group
+        pub group: Group,
     }
 
     impl Display for EntitiesMappingError {
@@ -79,7 +79,7 @@ pub mod errors {
 
     #[derive(Debug, Clone)]
     pub struct IndicesMappingError {
-        pub group: Group
+        pub group: Group,
     }
 
     impl Display for IndicesMappingError {
@@ -143,12 +143,17 @@ impl Entities {
     /// This method accepts a set of entities to be added to a specific group. For each entity provided, it performs
     /// the following action: if the entity already exists in the global group, it will relocate the entity within
     /// the nested groups; otherwise, it will add the entity to the global group and then perform the relocation.
-    pub fn try_add_group(&mut self, group: Group, entities: &[Entity]) -> errors::Result<()> {
+    ///
+    /// This function returns Ok(()) if all 'entities' are successfully associated with the specified 'group'.
+    /// If any issues occur or inconsistencies are detected, it will return an Error indicating the problematic group.
+    pub fn try_add_group(&mut self, group: Group, entities: &[Entity]) -> entities_errors::Result {
+        /// This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
             Some((index, in_index)) => match self.indices.get_mut(index) {
                 Some(indices) => match self.entities.get_mut(index) {
                     Some(array) => match self.groups.get_mut(index) {
                         Some(groups) => {
+                            // We gather all nested groups located to the right of the target group.
                             if let Some(groups_to_cross) = match in_index <= groups.len() {
                                 true => {
                                     let (_, groups) = groups.split_at_mut(in_index);
@@ -157,6 +162,8 @@ impl Entities {
                                 }
                                 false => None
                             } {
+                                // Lastly, we traverse these groups from the right, swapping all entities that currently
+                                // aren't part of the group to the end. If entity doesn't exist yet, it will add it before moving it
                                 for nested in groups_to_cross.iter_mut().rev() {
                                     for entity in entities {
                                         if let Some(entity_index) = indices.get_mut(entity) {
@@ -179,14 +186,61 @@ impl Entities {
                             }
 
                             Ok(())
-                        },
-                        None => Err(errors::GroupMappingError { group: group }.into())
+                        }
+                        None => Err(entities_errors::GroupMappingError { group: group }.into())
                     }
-                    None => Err(errors::EntitiesMappingError { group: group }.into())
+                    None => Err(entities_errors::EntitiesMappingError { group: group }.into())
                 }
-                None => Err(errors::IndicesMappingError { group: group }.into())
+                None => Err(entities_errors::IndicesMappingError { group: group }.into())
             },
-            None => Err(errors::GroupMappingError { group: group }.into())
+            None => Err(entities_errors::GroupMappingError { group: group }.into())
+        };
+    }
+
+    /// This method accepts a set of entities to be removed to a specific group. For each entity provided, it performs
+    /// the following action: if the entity exists in the nested groups, it will relocate it at the end of each nested group
+    /// to finally remove it from the packed array
+    pub fn try_remove_group(&mut self, group: Group, entities: &[Entity]) -> entities_errors::Result {
+        /// This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
+        return match self.map.get(&group).cloned() {
+            Some((index, in_index)) => match self.indices.get_mut(index) {
+                Some(indices) => match self.entities.get_mut(index) {
+                    Some(array) => match self.groups.get_mut(index) {
+                        Some(groups) => {
+                            // We gather all nested groups located to the right of the target group.
+                            if let Some(groups_to_cross) = match in_index <= groups.len() {
+                                true => {
+                                    let (_, groups) = groups.split_at_mut(in_index);
+
+                                    Some(groups)
+                                }
+                                false => None
+                            } {
+                                // Lastly, we traverse these groups from the l, swapping all entities that currently
+                                // are part of the group to the end.
+                                for nested in groups_to_cross {
+                                    for entity in entities {
+                                        if let Some(entity_index) = indices.get_mut(entity) {
+                                            if entity_index.clone() < nested.clone() {
+                                                array.swap(entity_index.clone(), nested.clone() - 1);
+
+                                                *entity_index = nested.clone() - 1;
+                                                *nested -= 1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Ok(())
+                        }
+                        None => Err(entities_errors::GroupMappingError { group: group }.into())
+                    }
+                    None => Err(entities_errors::EntitiesMappingError { group: group }.into())
+                }
+                None => Err(entities_errors::IndicesMappingError { group: group }.into())
+            },
+            None => Err(entities_errors::GroupMappingError { group: group }.into())
         };
     }
 }
