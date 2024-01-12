@@ -9,22 +9,19 @@ use std::cmp::Ordering;
 /// The Hopcroft-Karp algorithm, initially recursive, aims to be transformed into an iterative approach.
 /// Referencing: https://www.baeldung.com/cs/convert-recursion-to-iteration
 
-use std::collections::{
-    HashMap,
-    HashSet,
-};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::{
     core::component::{
         ComponentID,
         Group,
-        components_to_group
+        components_to_group,
     },
     memory::entities::Entities,
 };
 
 /// This type allows you to specify to the memory mapper the set of components you intend to use for your systems.
-pub type MemoryMappingDescriptor = Vec<Vec<ComponentID>>;
+pub type MemoryMappingDescriptor = Vec<HashSet<ComponentID>>;
 
 type iGroup = i64;
 
@@ -36,13 +33,13 @@ pub struct MemoryMapping {
     pub descriptor: MemoryMappingDescriptor,
 
     /// Represents the first layer of the bipartite graph along with its corresponding calculated vertices in the second layer.
-    pub layer_one: HashMap<iGroup, Option<iGroup>>,
+    pub layer_one: HashMap<Group, Option<iGroup>>,
 
     /// Represents the first second of the bipartite graph along with its corresponding calculated vertices in the first layer.
-    pub layer_two: HashMap<iGroup, Option<iGroup>>,
+    pub layer_two: HashMap<iGroup, Option<Group>>,
 
     /// Describes neighbors in layer two corresponding to vertices in layer one.
-    pub layer_one_neighbors: HashMap<iGroup, Vec<iGroup>>,
+    pub layer_one_neighbors: HashMap<Group, Vec<iGroup>>,
 
     /// Distances
     pub distances: HashMap<Option<iGroup>, usize>,
@@ -50,30 +47,101 @@ pub struct MemoryMapping {
 
 impl MemoryMapping {
     pub fn new(mut descriptor: MemoryMappingDescriptor) -> MemoryMapping {
+        fn b_strictly_contains_a(a: &HashSet<ComponentID>, b: &HashSet<ComponentID>) -> bool {
+            return a != b && a.is_subset(b);
+        }
+
+        let mut layer_one = HashMap::new();
+        let mut layer_two = HashMap::new();
+        let mut layer_one_neighbors = HashMap::new();
+        let mut distances = HashMap::new();
+
         descriptor.sort_unstable_by(|a, b| match a.len() > b.len() {
             true => Ordering::Greater,
             false => Ordering::Less,
         });
 
-        for i in 0..descriptor.len() {
+        for components_1 in &descriptor {
+            let group_a = components_to_group(components_1);
+            let igroup_a = -(group_a as iGroup);
 
-            for j in 0..i {
+            if !layer_one.contains_key(&group_a) {
+                layer_one.insert(group_a, None);
+                distances.insert(Some(group_a as iGroup), INFTY);
+            }
 
+            if !layer_two.contains_key(&igroup_a) {
+                layer_two.insert(igroup_a, None);
+                distances.insert(Some(igroup_a), INFTY);
+            }
+
+            if !layer_one_neighbors.contains_key(&group_a) {
+                layer_one_neighbors.insert(group_a, vec![igroup_a]);
+            }
+
+            for components_2 in &descriptor {
+                let group_b = components_to_group(components_2) as Group;
+
+                if b_strictly_contains_a(components_1, components_2) {
+                    if !layer_one.contains_key(&group_b) {
+                        layer_one.insert(group_b, None);
+                        distances.insert(Some(group_b as iGroup), INFTY);
+                    }
+
+                    if !layer_two.contains_key(&igroup_a) {
+                        layer_two.insert(igroup_a, None);
+                        distances.insert(Some(igroup_a), INFTY);
+                    }
+
+                    if let Some(neighbors) = layer_one_neighbors.get_mut(&group_b) {
+                        neighbors.push(igroup_a);
+                    } else {
+                        layer_one_neighbors.insert(group_b, vec![igroup_a]);
+                    }
+                }
             }
         }
 
+        // TODO: Compute graph
+
         return Self {
             descriptor: descriptor,
-            layer_one: HashMap::new(),
-            layer_two: HashMap::new(),
-            layer_one_neighbors: HashMap::new(),
-            distances: HashMap::new(),
+            layer_one: layer_one,
+            layer_two: layer_two,
+            layer_one_neighbors: layer_one_neighbors,
+            distances: distances,
         };
     }
 
     /// Generates the corresponding Entities storage based on the description and the mapping obtained from the Hopcroft-Karp algorithm.
     pub fn create_storage(&self) -> Entities {
-        return Entities::new(Vec::new(), HashMap::new());
+        let mut groups = Vec::new();
+        let mut mapping = HashMap::new();
+
+        let mut temp = Vec::<VecDeque<Group>>::new();
+        let mut indices = HashMap::<Group, (usize, (Group, Group))>::new();
+
+        // TODO : build temp and indices
+
+        for (u, v) in &self.layer_one {
+
+        }
+
+        for queue in temp {
+            groups.push(Vec::new());
+
+            if let Some(last) = groups.last_mut() {
+                for group in queue {
+                    last.push(group);
+                }
+            }
+        }
+
+        for (group, (index, (_, _))) in indices {
+            indices.insert(group, index);
+        }
+
+        return Entities::new(groups, mapping);
     }
 
     /// Calculates the group to which an entity belongs when adding additional components to it, given its previous set of components.

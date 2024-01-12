@@ -5,6 +5,7 @@ use std::{
         Hasher,
     },
 };
+use std::collections::HashSet;
 
 /// Macro derive proc to implement AnyComponent trait and function 'id' for the current struct
 pub use ecs_macros::Component;
@@ -21,10 +22,12 @@ pub trait AnyComponent {
 }
 
 /// Converts a list of ComponentIDs into the Group format by hashing the list of IDs.
-pub fn components_to_group(components: &[ComponentID]) -> Group {
+pub fn components_to_group(components: &HashSet<ComponentID>) -> Group {
     let mut hasher = DefaultHasher::new();
 
-    components.hash(&mut hasher);
+    for component in components {
+        component.hash(&mut hasher);
+    }
 
     return hasher.finish();
 }
