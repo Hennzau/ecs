@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 /// This module manages memory mapping to generate the appropriate Entities storage
 /// based on the user's chosen set of components.
 
@@ -6,10 +5,18 @@ use std::cmp::Ordering;
 /// It revolves around creating a specialized bipartite graph and employing the Hopcroft-Karp algorithm
 /// to create an optimized mapping for PackedEntities.
 
+/// The idea is to construct a bipartite graph where each group appears both in the left and right groups.
+/// Then, we connect each group on the left to every group on the right that contains it.
+/// Finally, we use the Hopcroft-Karp algorithm to determine the minimal bipartite matching.
+
 /// The Hopcroft-Karp algorithm, initially recursive, aims to be transformed into an iterative approach.
 /// Referencing: https://www.baeldung.com/cs/convert-recursion-to-iteration
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{
+    HashMap,
+    HashSet,
+    VecDeque
+};
 
 use crate::{
     core::component::{
@@ -23,7 +30,7 @@ use crate::{
 /// This type allows you to specify to the memory mapper the set of components you intend to use for your systems.
 pub type MemoryMappingDescriptor = Vec<HashSet<ComponentID>>;
 
-type iGroup = i64;
+type IGroup = i64;
 
 const INFTY: usize = usize::MAX;
 
@@ -33,22 +40,22 @@ pub struct MemoryMapping {
     pub descriptor: MemoryMappingDescriptor,
 
     /// Represents the first layer of the bipartite graph along with its corresponding calculated vertices in the second layer.
-    pub layer_one: HashMap<Group, Option<iGroup>>,
+    pub layer_one: HashMap<Group, Option<IGroup>>,
 
     /// Represents the first second of the bipartite graph along with its corresponding calculated vertices in the first layer.
-    pub layer_two: HashMap<iGroup, Option<Group>>,
+    pub layer_two: HashMap<IGroup, Option<Group>>,
 
     /// Describes neighbors in layer two corresponding to vertices in layer one.
-    pub layer_one_neighbors: HashMap<Group, Vec<iGroup>>,
+    pub layer_one_neighbors: HashMap<Group, Vec<IGroup>>,
 
     /// Distances
-    pub distances: HashMap<Option<iGroup>, usize>,
+    pub distances: HashMap<Option<IGroup>, usize>,
 }
 
 impl MemoryMapping {
-    pub fn new(mut descriptor: MemoryMappingDescriptor) -> MemoryMapping {
-        fn b_strictly_contains_a(a: &HashSet<ComponentID>, b: &HashSet<ComponentID>) -> bool {
-            return a != b && a.is_subset(b);
+    pub fn new(descriptor: MemoryMappingDescriptor) -> MemoryMapping {
+        fn second_strictly_contains_first(first: &HashSet<ComponentID>, second: &HashSet<ComponentID>) -> bool {
+            return first != second && first.is_subset(second);
         }
 
         let mut layer_one = HashMap::new();
@@ -56,18 +63,13 @@ impl MemoryMapping {
         let mut layer_one_neighbors = HashMap::new();
         let mut distances = HashMap::new();
 
-        descriptor.sort_unstable_by(|a, b| match a.len() > b.len() {
-            true => Ordering::Greater,
-            false => Ordering::Less,
-        });
-
-        for components_1 in &descriptor {
-            let group_a = components_to_group(components_1);
-            let igroup_a = -(group_a as iGroup);
+        for components_a in &descriptor {
+            let group_a = components_to_group(components_a);
+            let igroup_a = -(group_a as IGroup);
 
             if !layer_one.contains_key(&group_a) {
                 layer_one.insert(group_a, None);
-                distances.insert(Some(group_a as iGroup), INFTY);
+                distances.insert(Some(group_a as IGroup), INFTY);
             }
 
             if !layer_two.contains_key(&igroup_a) {
@@ -76,21 +78,16 @@ impl MemoryMapping {
             }
 
             if !layer_one_neighbors.contains_key(&group_a) {
-                layer_one_neighbors.insert(group_a, vec![igroup_a]);
+                layer_one_neighbors.insert(group_a, Vec::new());
             }
 
-            for components_2 in &descriptor {
-                let group_b = components_to_group(components_2) as Group;
+            for components_b in &descriptor {
+                let group_b = components_to_group(components_b) as Group;
 
-                if b_strictly_contains_a(components_1, components_2) {
+                if second_strictly_contains_first(components_b, components_a) {
                     if !layer_one.contains_key(&group_b) {
                         layer_one.insert(group_b, None);
-                        distances.insert(Some(group_b as iGroup), INFTY);
-                    }
-
-                    if !layer_two.contains_key(&igroup_a) {
-                        layer_two.insert(igroup_a, None);
-                        distances.insert(Some(igroup_a), INFTY);
+                        distances.insert(Some(group_b as IGroup), INFTY);
                     }
 
                     if let Some(neighbors) = layer_one_neighbors.get_mut(&group_b) {
@@ -102,7 +99,22 @@ impl MemoryMapping {
             }
         }
 
-        // TODO: Compute graph
+        distances.insert(None, INFTY);
+
+        // Now apply Hopcroft-Karp to determine the optimal matching : the result of the matching will be accessible
+        // from both layer_one and layer_two maps
+
+        loop {
+            if !Self::compute_distances(&layer_one, &layer_two, &layer_one_neighbors, &mut distances) {
+                break;
+            }
+
+            for (u, paired) in layer_one.clone() {
+                if paired.is_none() {
+                    Self::compute_matching(Some(u), &mut layer_one, &mut layer_two, &layer_one_neighbors, &mut distances);
+                }
+            }
+        }
 
         return Self {
             descriptor: descriptor,
@@ -113,32 +125,59 @@ impl MemoryMapping {
         };
     }
 
-    /// Generates the corresponding Entities storage based on the description and the mapping obtained from the Hopcroft-Karp algorithm.
+    /// Generates the corresponding Entities storage based on the previously generated graph.
+    ///
+    /// This function first constructs the mapping from the graph and then passes it to the Entities constructor.
     pub fn create_storage(&self) -> Entities {
         let mut groups = Vec::new();
         let mut mapping = HashMap::new();
 
-        let mut temp = Vec::<VecDeque<Group>>::new();
-        let mut indices = HashMap::<Group, (usize, (Group, Group))>::new();
-
-        // TODO : build temp and indices
-
         for (u, v) in &self.layer_one {
+            if mapping.contains_key(u) { continue; } // If u has already been mapped, juste ignored it
 
-        }
+            // Create the list of groups u belongs to : first from u to None, then from u to the first group.
+            let mut list = VecDeque::<Group>::from(vec![u.clone()]);
 
-        for queue in temp {
+            // Get next group (at the right of layer_one)
+            let mut next = v.clone();
+            while let Some(icurrent) = next {
+                let current = icurrent.abs() as Group;
+
+                list.push_back(current);
+                next = match self.layer_one.get(&current) {
+                    Some(next_) => next_.clone(),
+                    None => None
+                };
+            }
+
+            // Get previous group (at the left of layer_two)
+            let iu = -(u.clone() as IGroup);
+            if let Some(t) = self.layer_two.get(&iu) {
+                let mut previous = t.clone();
+                while let Some(current) = previous {
+                    let icurrent = -(current as IGroup);
+
+                    list.push_front(current);
+                    previous = match self.layer_two.get(&icurrent) {
+                        Some(previous_) => previous_.clone(),
+                        None => None
+                    }
+                };
+            }
+
+            // Now get those groups from the right of the list and insert them in the right group
+            let index = groups.len();
             groups.push(Vec::new());
 
             if let Some(last) = groups.last_mut() {
-                for group in queue {
-                    last.push(group);
+                let mut in_index = 0usize;
+                while let Some(group) = list.pop_back() {
+                    last.push(0);
+                    mapping.insert(group, (index, in_index));
+
+                    in_index += 1;
                 }
             }
-        }
-
-        for (group, (index, (_, _))) in indices {
-            indices.insert(group, index);
         }
 
         return Entities::new(groups, mapping);
@@ -160,5 +199,102 @@ impl MemoryMapping {
         }
 
         return new_groups.symmetric_difference(&previous_groups).cloned().collect();
+    }
+
+    /// This section of the code implements the Hopcroft-Karp algorithm. It should be used after creating the MemoryMapping.
+    ///
+    /// This function calculates new distances in the graph and updates them.
+
+    fn compute_distances(layer_one: &HashMap<Group, Option<IGroup>>, layer_two: &HashMap<IGroup, Option<Group>>, layer_one_neighbors: &HashMap<Group, Vec<IGroup>>, distances: &mut HashMap<Option<IGroup>, usize>) -> bool {
+        let mut queue = VecDeque::<Option<Group>>::new();
+
+        for (vertex, pair) in layer_one {
+            let ivertex_pos = vertex.clone() as IGroup;
+
+            if pair.is_none() {
+                if let Some(distance) = distances.get_mut(&Some(ivertex_pos)) {
+                    *distance = 0;
+
+                    queue.push_back(Some(vertex.clone()));
+                }
+            } else {
+                if let Some(distance) = distances.get_mut(&Some(ivertex_pos)) {
+                    *distance = INFTY;
+                }
+            }
+        }
+
+        if let Some(distance) = distances.get_mut(&None) {
+            *distance = INFTY;
+        }
+
+        while let Some(vertex) = queue.pop_front() {
+            let ivertex = vertex.map(|vert| vert as IGroup);
+
+            if let Some(dist_u) = distances.get(&ivertex).cloned() {
+                if let Some(nil) = distances.get(&None).cloned() {
+                    if dist_u < nil {
+                        if let Some(vertex) = vertex {
+                            if let Some(neighbors) = layer_one_neighbors.get(&vertex) {
+                                for v in neighbors {
+                                    if let Some(pair_v) = layer_two.get(v) {
+                                        let ipair_v = pair_v.map(|vert| vert as IGroup);
+                                        if let Some(dist_pair_v) = distances.get_mut(&ipair_v) {
+                                            if dist_pair_v.clone() == INFTY {
+                                                *dist_pair_v = dist_u + 1;
+                                                queue.push_back(pair_v.clone());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return match distances.get(&None) {
+            Some(distance) => distance.clone() < INFTY,
+            None => false
+        };
+    }
+
+    /// This function calculates the right pair according to the current calculated distances
+
+    fn compute_matching(vertex: Option<Group>, layer_one: &mut HashMap<Group, Option<IGroup>>, layer_two: &mut HashMap<IGroup, Option<Group>>, layer_one_neighbors: &HashMap<Group, Vec<IGroup>>, distances: &mut HashMap<Option<IGroup>, usize>) -> bool {
+        if let Some(vertex) = vertex {
+            if let Some(neighbors) = layer_one_neighbors.get(&vertex).cloned() {
+                for v in neighbors {
+                    if let Some(pair_v) = layer_two.get(&v).cloned() {
+                        let ipair_v = pair_v.map(|vert| vert as IGroup);
+                        if let Some(vertex_dist) = distances.get(&Some(vertex as IGroup)).cloned() {
+                            if let Some(pair_v_dist) = distances.get(&ipair_v).cloned() {
+                                if (vertex_dist == INFTY && pair_v_dist == INFTY) || (vertex_dist != INFTY && pair_v_dist == vertex_dist + 1) {
+                                    if Self::compute_matching(pair_v.clone(), layer_one, layer_two, layer_one_neighbors, distances) {
+                                        if let Some(pair_v) = layer_two.get_mut(&v) {
+                                            *pair_v = Some(vertex);
+                                        }
+
+                                        if let Some(pair_u) = layer_one.get_mut(&vertex) {
+                                            *pair_u = Some(v.clone());
+                                        }
+
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let Some(distance) = distances.get_mut(&Some(vertex as IGroup)) {
+                *distance = INFTY;
+                return false;
+            }
+        }
+
+        return true;
     }
 }
