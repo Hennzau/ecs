@@ -30,6 +30,14 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
 
                 return hasher.finish();
             }
+
+            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+                return self as &mut dyn std::any::Any;
+            }
+
+            fn as_any(&self) -> &dyn std::any::Any {
+                return self as &dyn std::any::Any;
+            }
         }
     };
 
