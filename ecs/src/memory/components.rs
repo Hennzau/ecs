@@ -75,33 +75,7 @@ impl Components {
         return Err(());
     }
 
-    pub fn try_add_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Result<(), ()> {
-        return self.try_add_any_component(entity, T::id(), Box::from(value));
-    }
-
-    pub fn try_add_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Option<&T> {
-        return match self.try_add_component::<T>(entity, value) {
-            Ok(()) => self.map.get(&T::id()).cloned().and_then(
-                |index| self.components.get(index).and_then(
-                    |components| self.indices.get(index).and_then(
-                        |indices| indices.get(entity).cloned().and_then(
-                            |in_index| Self::convert_ok::<T>(components.get(in_index)))))),
-            Err(()) => None
-        };
-    }
-
-    pub fn try_add_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Option<&mut T> {
-        return match self.try_add_component::<T>(entity, value) {
-            Ok(()) => self.map.get(&T::id()).cloned().and_then(
-                |index| self.components.get_mut(index).and_then(
-                    |components| self.indices.get(index).and_then(
-                        |indices| indices.get(entity).cloned().and_then(
-                            |in_index| Self::convert_mut_ok::<T>(components.get_mut(in_index)))))),
-            Err(()) => None
-        };
-    }
-
-    fn try_remove_any_component(&mut self, entity: &Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
+    pub fn try_remove_any_component(&mut self, entity: &Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
         if !self.contains(entity, id) {
             return Err(());
         }
@@ -123,14 +97,6 @@ impl Components {
         }
 
         return Err(());
-    }
-
-    pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Result<(), ()> {
-        return self.try_remove_any_component(entity, T::id()).map(|_| ());
-    }
-
-    pub fn try_remove_get_any_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<dyn AnyComponent>> {
-        return self.try_remove_any_component(entity, T::id()).ok();
     }
 
     pub fn try_get_any_component(&self, entity: &Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
