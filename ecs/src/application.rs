@@ -14,13 +14,12 @@ use crate::{
     },
     core::{
         component::{
-            Group,
             ComponentID,
+            AnyComponent
         },
         entity::Entity,
     },
 };
-use crate::core::component::AnyComponent;
 
 pub struct Application {
     mapping: MemoryMapping,
@@ -61,7 +60,10 @@ impl Application {
                     let groups = self.mapping.get_next_membership(&previous_components, &HashSet::from([id]));
 
                     for group in groups {
-                        let _ = self.entities.try_add_group(group, &[entity.clone()]);
+                        let result = self.entities.try_add_group(group, &[entity.clone()]);
+                        if let Err(e) = result {
+                            log::warn!("Error while adding entity to group: {:?}", e);
+                        }
                     }
 
                     previous_components.insert(id);
@@ -100,7 +102,10 @@ impl Application {
                     let groups = self.mapping.get_next_membership(&previous_components, &HashSet::from([id]));
 
                     for group in groups {
-                        let _ = self.entities.try_remove_group(group, &[entity.clone()]);
+                        let result = self.entities.try_remove_group(group, &[entity.clone()]);
+                        if let Err(e) = result {
+                            log::warn!("Error while removing entity from group: {:?}", e);
+                        }
                     }
                 }
 

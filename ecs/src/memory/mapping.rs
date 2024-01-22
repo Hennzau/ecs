@@ -1,14 +1,14 @@
 /// This module manages memory mapping to generate the appropriate Entities storage
 /// based on the user's chosen set of components.
-
+///
 /// This mapping principle was conceived by Genouville Grégoire, Bianchi Bérénice, and Le Van Enzo.
 /// It revolves around creating a specialized bipartite graph and employing the Hopcroft-Karp algorithm
 /// to create an optimized mapping for PackedEntities.
-
+///
 /// The idea is to construct a bipartite graph where each group appears both in the left and right groups.
 /// Then, we connect each group on the left to every group on the right that contains it.
 /// Finally, we use the Hopcroft-Karp algorithm to determine the minimal bipartite matching.
-
+///
 /// The Hopcroft-Karp algorithm, initially recursive, aims to be transformed into an iterative approach.
 /// Referencing: https://www.baeldung.com/cs/convert-recursion-to-iteration
 
@@ -48,7 +48,7 @@ pub struct MemoryMapping {
     /// Describes neighbors in layer two corresponding to vertices in layer one.
     pub layer_one_neighbors: HashMap<Group, Vec<IGroup>>,
 
-    /// Distances
+    /// Distances of each vertex from the source vertex.
     pub distances: HashMap<Option<IGroup>, usize>,
 }
 
