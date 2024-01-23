@@ -24,6 +24,9 @@ pub mod prelude {
             },
             system::System,
         },
-        application::Application,
+        application::{
+            Application,
+            builder::ApplicationBuilder
+        },
     };
 }

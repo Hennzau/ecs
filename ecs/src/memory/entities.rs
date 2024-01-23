@@ -162,19 +162,25 @@ impl Entities {
                                 // aren't part of the group to the end. If entity doesn't exist yet, it will add it before moving it
                                 for nested in groups_to_cross.iter_mut().rev() {
                                     for entity in entities {
-                                        if let Some(entity_index) = indices.get_mut(entity) {
-                                            if entity_index.clone() >= nested.clone() {
-                                                array.swap(entity_index.clone(), nested.clone());
+                                        if let Some(entity_index) = indices.get(entity).cloned() {
+                                            if entity_index >= nested.clone() {
+                                                if let Some(previous_entity) = array.get(nested.clone()).cloned() {
+                                                    indices.insert(previous_entity, entity_index);
+                                                    indices.insert(entity.clone(), nested.clone());
 
-                                                *entity_index = nested.clone();
+                                                    array.swap(entity_index, nested.clone());
+                                                }
+
                                                 *nested += 1;
                                             }
                                         } else {
+                                            // If the entity doesn't exist yet, it means that the actual nested group is the last one.
+                                            // Therefore, we can simply add the entity at the end of the array.
+
                                             let entity_index = array.len();
                                             array.push(entity.clone());
-                                            array.swap(entity_index, nested.clone());
-
                                             indices.insert(entity.clone(), nested.clone());
+
                                             *nested += 1;
                                         }
                                     }
@@ -203,10 +209,10 @@ impl Entities {
                 Some(indices) => match self.entities.get_mut(index) {
                     Some(array) => match self.groups.get_mut(index) {
                         Some(groups) => {
-                            // We gather all nested groups located to the right of the target group.
-                            if let Some(groups_to_cross) = match in_index <= groups.len() {
+                            // We gather all nested groups located to the left of the target group (including the target group).
+                            if let Some(groups_to_cross) = match in_index < groups.len() {
                                 true => {
-                                    let (_, groups) = groups.split_at_mut(in_index);
+                                    let (groups, _) = groups.split_at_mut(in_index + 1);
 
                                     Some(groups)
                                 }
@@ -216,11 +222,15 @@ impl Entities {
                                 // are part of the group to the end.
                                 for nested in groups_to_cross {
                                     for entity in entities {
-                                        if let Some(entity_index) = indices.get_mut(entity) {
-                                            if entity_index.clone() < nested.clone() {
-                                                array.swap(entity_index.clone(), nested.clone() - 1);
+                                        if let Some(entity_index) = indices.get(entity).cloned() {
+                                            if entity_index < nested.clone() {
+                                                if let Some(previous_entity) = array.get(nested.clone() - 1).cloned() {
+                                                    indices.insert(entity.clone(), nested.clone() - 1);
+                                                    indices.insert(previous_entity, entity_index);
 
-                                                *entity_index = nested.clone() - 1;
+                                                    array.swap(entity_index, nested.clone() - 1);
+                                                }
+
                                                 *nested -= 1;
                                             }
                                         }

@@ -11,6 +11,7 @@ use crate::{
     },
     core::{
         component::{
+            Group,
             ComponentID,
             AnyComponent
         },
@@ -112,6 +113,14 @@ impl Application {
             self.launch_tick_systems();
         }
     }
+
+    pub fn try_view(&self, group: Group) -> Option<&[Entity]> {
+        return self.entities.try_view(group);
+    }
+
+    pub fn entities(&self) -> &[Vec<Entity>] {
+        return self.entities.entities();
+    }
 }
 
 /// Systems management functions
@@ -163,6 +172,7 @@ impl Application {
 
                     for group in groups {
                         let result = self.entities.try_add_group(group, &[entity.clone()]);
+
                         if let Err(e) = result {
                             log::warn!("Error while adding entity to group: {:?}", e);
                         }
@@ -203,12 +213,16 @@ impl Application {
         return match self.components.try_remove_any_component(entity, id) {
             Ok(any_component) => {
                 if let Some(previous_components) = self.components_tracker.get_mut(entity) {
+                    println!("Entity: {} / Group : {} / {:?}", entity, id, previous_components);
                     previous_components.remove(&id);
 
                     let groups = self.mapping.get_next_membership(&previous_components, &HashSet::from([id]));
 
+                    println!("Groups to remove: {:?}", groups);
+
                     for group in groups {
                         let result = self.entities.try_remove_group(group, &[entity.clone()]);
+
                         if let Err(e) = result {
                             log::warn!("Error while removing entity from group: {:?}", e);
                         }

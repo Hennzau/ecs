@@ -100,16 +100,18 @@ impl Components {
 
         if let Some(index) = self.map.get(&id).cloned() {
             if let (Some(components), Some(indices)) = (self.components.get_mut(index), self.indices.get_mut(index)) {
+
                 let last_in_index = components.len() - 1;
+
                 let last = indices.iter().find_map(|(key, value)| if value.clone() == last_in_index { Some(key) } else { None });
+
                 if let Some(last_entity) = last.cloned() {
                     if let Some(in_index) = indices.get(entity).cloned() {
                         indices.insert(last_entity, in_index);
+                        indices.remove(entity);
 
                         return Ok(components.swap_remove(in_index));
                     }
-
-                    indices.remove(entity);
                 }
             }
         }
