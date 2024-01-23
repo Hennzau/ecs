@@ -116,7 +116,7 @@ impl Entities {
 
     /// When the group is accurately mapped, this function will return a slice of the 'packed/dense' entities array
     /// containing all entities belonging to this particular group.
-    pub fn view(&self, group: Group) -> Option<&[Entity]> {
+    pub fn try_view(&self, group: Group) -> Option<&[Entity]> {
         return self.map.get(&group).cloned().map_or_else(|| {
             log::warn!("You tried to view entities from group {}, but this group wasn't mapped", group);
 

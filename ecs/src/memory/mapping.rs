@@ -30,7 +30,7 @@ use crate::{
 /// This type allows you to specify to the memory mapper the set of components you intend to use for your systems.
 pub type MemoryMappingDescriptor = Vec<HashSet<ComponentID>>;
 
-type IGroup = i64;
+type IGroup = i128;
 
 const INFTY: usize = usize::MAX;
 

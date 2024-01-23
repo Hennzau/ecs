@@ -12,3 +12,18 @@
 pub mod core;
 pub mod memory;
 pub mod application;
+
+pub mod prelude {
+    pub use crate::{
+        core::{
+            entity::Entity,
+            component::{
+                AnyComponent,
+                ComponentID,
+                Component,
+            },
+            system::System,
+        },
+        application::Application,
+    };
+}
