@@ -1,4 +1,11 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{
+        HashMap,
+        HashSet,
+        VecDeque
+    },
+    time
+};
 
 use crate::{
     memory::{
@@ -93,7 +100,15 @@ impl Application {
     pub fn run(&mut self) {
         self.signals.push_back(ApplicationSignal::ApplicationStarted);
 
+        let starting_time = time::Instant::now();
+        let mut previous_time = 0f32;
+
         loop {
+            let now_time = starting_time.elapsed().as_secs_f32();
+            let delta_time = now_time - previous_time;
+
+            previous_time = now_time;
+
             match self.signals.pop_front() {
                 Some(ApplicationSignal::ApplicationStarted) => {
                     self.launch_signal_systems(ApplicationSignal::ApplicationStarted);
@@ -110,7 +125,7 @@ impl Application {
                 self.launch_event_systems(event);
             }
 
-            self.launch_tick_systems();
+            self.launch_tick_systems(delta_time);
         }
     }
 
@@ -150,12 +165,12 @@ impl Application {
         }
     }
 
-    pub fn launch_tick_systems(&mut self) {
+    pub fn launch_tick_systems(&mut self, delta_time: f32) {
         let mut world = World::new(&mut self.components);
 
         for system in &mut self.tick_systems {
             if let Some(entities) = self.entities.try_view(system.group()) {
-                system.on_tick(entities, &mut world);
+                system.on_tick(delta_time, entities, &mut world);
             }
         }
     }

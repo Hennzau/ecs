@@ -30,7 +30,7 @@ pub trait System {
 
     fn on_join(&mut self, _entities: &[Entity], _world: &mut World) {}
 
-    fn on_tick(&mut self, _entities: &[Entity], _world: &mut World) {}
+    fn on_tick(&mut self, _delta_time: f32, _entities: &[Entity], _world: &mut World) {}
 
     fn on_quit(&mut self, _entities: &[Entity], _world: &mut World) {}
 }
