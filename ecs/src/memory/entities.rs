@@ -212,7 +212,7 @@ impl Entities {
                 Some(indices) => match self.entities.get_mut(index) {
                     Some(array) => match self.groups.get_mut(index) {
                         Some(groups) => {
-                            let remove_from_global_group = in_index == groups.len() - 1;
+                            let last_in_index = groups.len() - 1;
 
                             // We gather all nested groups located to the left of the target group (including the target group).
                             if let Some(groups_to_cross) = match in_index < groups.len() {
@@ -225,7 +225,7 @@ impl Entities {
                             } {
                                 // Lastly, we traverse these groups from the l, swapping all entities that currently
                                 // are part of the group to the end.
-                                for nested in groups_to_cross {
+                                for (i, nested) in groups_to_cross.iter_mut().enumerate() {
                                     for entity in entities {
                                         if let Some(entity_index) = indices.get(entity).cloned() {
                                             if entity_index < nested.clone() {
@@ -234,18 +234,16 @@ impl Entities {
                                                     indices.insert(entity.clone(), nested.clone() - 1);
 
                                                     array.swap(entity_index, nested.clone() - 1);
+
+                                                    if i == last_in_index {
+                                                        array.pop();
+                                                        indices.remove(entity);
+                                                    }
                                                 }
 
                                                 *nested -= 1;
                                             }
                                         }
-                                    }
-                                }
-
-                                if remove_from_global_group {
-                                    for entity in entities {
-                                        indices.remove(entity);
-                                        array.pop();
                                     }
                                 }
                             }
