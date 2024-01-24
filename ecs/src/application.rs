@@ -213,12 +213,9 @@ impl Application {
         return match self.components.try_remove_any_component(entity, id) {
             Ok(any_component) => {
                 if let Some(previous_components) = self.components_tracker.get_mut(entity) {
-                    println!("Entity: {} / Group : {} / {:?}", entity, id, previous_components);
                     previous_components.remove(&id);
 
                     let groups = self.mapping.get_next_membership(&previous_components, &HashSet::from([id]));
-
-                    println!("Groups to remove: {:?}", groups);
 
                     for group in groups {
                         let result = self.entities.try_remove_group(group, &[entity.clone()]);

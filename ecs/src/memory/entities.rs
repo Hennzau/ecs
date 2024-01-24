@@ -174,12 +174,15 @@ impl Entities {
                                                 *nested += 1;
                                             }
                                         } else {
-                                            // If the entity doesn't exist yet, it means that the actual nested group is the last one.
-                                            // Therefore, we can simply add the entity at the end of the array.
+                                            // If the entity doesn't exist yet, we add it to the global group and it means
+                                            // that the current nested group is the last one. So because they are no entities
+                                            // that are in 'array' and in no nested group, we can safely add the entity at the end.
+                                            // without the need to swap it.
 
                                             let entity_index = array.len();
+
                                             array.push(entity.clone());
-                                            indices.insert(entity.clone(), nested.clone());
+                                            indices.insert(entity.clone(), entity_index);
 
                                             *nested += 1;
                                         }
@@ -209,6 +212,8 @@ impl Entities {
                 Some(indices) => match self.entities.get_mut(index) {
                     Some(array) => match self.groups.get_mut(index) {
                         Some(groups) => {
+                            let remove_from_global_group = in_index == groups.len() - 1;
+
                             // We gather all nested groups located to the left of the target group (including the target group).
                             if let Some(groups_to_cross) = match in_index < groups.len() {
                                 true => {
@@ -225,8 +230,8 @@ impl Entities {
                                         if let Some(entity_index) = indices.get(entity).cloned() {
                                             if entity_index < nested.clone() {
                                                 if let Some(previous_entity) = array.get(nested.clone() - 1).cloned() {
-                                                    indices.insert(entity.clone(), nested.clone() - 1);
                                                     indices.insert(previous_entity, entity_index);
+                                                    indices.insert(entity.clone(), nested.clone() - 1);
 
                                                     array.swap(entity_index, nested.clone() - 1);
                                                 }
@@ -234,6 +239,13 @@ impl Entities {
                                                 *nested -= 1;
                                             }
                                         }
+                                    }
+                                }
+
+                                if remove_from_global_group {
+                                    for entity in entities {
+                                        indices.remove(entity);
+                                        array.pop();
                                     }
                                 }
                             }
