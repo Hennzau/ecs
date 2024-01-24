@@ -1,5 +1,5 @@
 [package]
-name = "ecs_example"
+name = "ecs_memory_example"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 hnz = { path = "../../../hnz" }
+simple_logger = "4.3.0"
