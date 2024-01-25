@@ -2,7 +2,8 @@
 
 ## Memory
 
-The **memory** section of this crate offers a method to map a storage for the purpose of maintaining sorted elements.
+The **memory** section of this crate offers a method to map a entity storage for the purpose of maintaining 
+sorted elements.
 
 The concept involves organizing entities into multiple vectors to monitor those that possess specific combinations of
 components.
@@ -21,8 +22,7 @@ achieve this is by sorting entities within a 'virtual nested storage'
 
 Here, entities are identified by their IDs, ranging from 0 to 40. These entities are stored contiguously in a vector and
 sorted in a manner where entities possessing **A, B, C** precede the ABC cursor, those with **A, B** are positioned
-before the
-AB cursor, and so forth...
+before the AB cursor, and so forth...
 
 The actual storage appears as follows:
 
@@ -44,8 +44,7 @@ The actual storage appears as follows:
 ````
 
 The concept is to uphold a mapping system that directs you to the storage where your entities are located, along with
-indicating the cursor. In our code, the ``graph.rs`` module and ``mapping.rs`` module generate a map that appears as
-follows:
+indicating the cursor. In our code, the ``mapping.rs`` module generate a map that appears as follows:
 
 ````rust
 {
@@ -59,7 +58,12 @@ follows:
 }
 ````
 
-The value of the cursor is accessible by the `mapping.value ()` function.
+As indicated in [mapping.rs](https://github.com/Hennzau/hnz/blob/main/ecs/src/memory/mapping.rs), it uses Hopcroft-Karp 
+algorithm to generate a minimum mapping.
+
+The value of the cursor is next used to manipulate entities within the storage. For example, if we want to add an entity
+we may need to swap it with the cursor, and then increment the cursor etc... This is done in 
+[entities.rs](https://github.com/Hennzau/hnz/blob/main/ecs/src/memory/entities.rs)
 
 ### Optimization
 
@@ -73,4 +77,4 @@ you add a component to an entity, you must check the groups to which the entity 
 the map to access the storage that may require updating, and perform updates using a test-and-swap approach for each
 group, beginning from the largest to the smallest. (ABC is smaller than A because ABC encompasses A)
 
-This has been implemented in : [storage.rs](https://github.com/Hennzau/hnz/blob/main/ecs/src/memory/storage.rs)
+This has been implemented in : [entities.rs](https://github.com/Hennzau/hnz/blob/main/ecs/src/memory/entities.rs)
