@@ -1,5 +1,5 @@
 [package]
-name = "ecs_memory_example"
+name = "ecs_systems"
 version = "0.1.0"
 edition = "2021"
 

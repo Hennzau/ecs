@@ -1,6 +1,8 @@
 /// World represent an instance of an application that can be used by a system to access data
 /// or to modify it.
 
+use std::collections::VecDeque;
+
 use crate::{
     core::{
         component::{
@@ -8,19 +10,21 @@ use crate::{
             AnyComponent
         },
         entity::Entity,
+        event::AnyEvent
     },
-
     memory::components::Components
 };
 
 pub struct World<'a> {
-    components: &'a mut Components,
+    pub components: &'a mut Components,
+    pub events: VecDeque<Box<dyn AnyEvent>>,
 }
 
 impl World<'_> {
     pub fn new(components: &mut Components) -> World<'_> {
         return World {
             components,
+            events: VecDeque::new(),
         };
     }
 
@@ -38,5 +42,9 @@ impl World<'_> {
 
     pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
         return self.components.try_get_mut_component::<T>(entity);
+    }
+
+    pub fn send_event(&mut self, event: Box<dyn AnyEvent>) {
+        self.events.push_back(event);
     }
 }

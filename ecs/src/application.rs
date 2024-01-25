@@ -25,7 +25,7 @@ use crate::{
         entity::Entity,
         event::{
             EventID,
-            AnyEvent
+            AnyEvent,
         },
         system::System,
         world::World
@@ -33,12 +33,7 @@ use crate::{
 };
 
 pub mod builder;
-
-#[derive(Clone, Eq, Hash, PartialEq)]
-pub enum ApplicationSignal {
-    ApplicationStarted,
-    ApplicationStopped,
-}
+pub mod basic;
 
 pub struct Application {
     mapping: MemoryMapping,
@@ -48,10 +43,8 @@ pub struct Application {
     next_entity: Entity,
     components_tracker: HashMap<Entity, HashSet<ComponentID>>,
 
-    signals: VecDeque<ApplicationSignal>,
     events: VecDeque<Box<dyn AnyEvent>>,
 
-    signal_systems: HashMap<ApplicationSignal, Vec<Box<dyn System>>>,
     event_systems: HashMap<EventID, Vec<Box<dyn System>>>,
 
     join_systems: Vec<Box<dyn System>>,
@@ -61,7 +54,6 @@ pub struct Application {
 
 impl Application {
     pub fn new(descriptor: MemoryMappingDescriptor,
-               signal_systems: HashMap<ApplicationSignal, Vec<Box<dyn System>>>,
                event_systems: HashMap<EventID, Vec<Box<dyn System>>>,
                join_systems: Vec<Box<dyn System>>,
                quit_systems: Vec<Box<dyn System>>,
@@ -76,10 +68,8 @@ impl Application {
             next_entity: 0 as Entity,
             components_tracker: HashMap::new(),
 
-            signals: VecDeque::new(),
             events: VecDeque::new(),
 
-            signal_systems: signal_systems,
             event_systems: event_systems,
 
             join_systems: join_systems,
@@ -97,35 +87,28 @@ impl Application {
         return result;
     }
 
-    pub fn run(&mut self) {
-        self.signals.push_back(ApplicationSignal::ApplicationStarted);
-
+    pub fn run(&mut self, max_rate: f32) {
         let starting_time = time::Instant::now();
         let mut previous_time = 0f32;
 
-        loop {
+        'main: loop {
             let now_time = starting_time.elapsed().as_secs_f32();
             let delta_time = now_time - previous_time;
 
             previous_time = now_time;
 
-            match self.signals.pop_front() {
-                Some(ApplicationSignal::ApplicationStarted) => {
-                    self.launch_signal_systems(ApplicationSignal::ApplicationStarted);
-                }
-                Some(ApplicationSignal::ApplicationStopped) => {
-                    self.launch_signal_systems(ApplicationSignal::ApplicationStopped);
-
-                    break;
-                }
-                None => {}
-            }
-
             while let Some(event) = self.events.pop_front() {
+                if let Some(_) = event.as_any().downcast_ref::<basic::events::CloseApplication>() {
+                    break 'main;
+                }
+
                 self.launch_event_systems(event);
             }
 
             self.launch_tick_systems(delta_time);
+
+            let sleep_time = ((1f32 / max_rate) - delta_time).abs();
+            std::thread::sleep(time::Duration::from_secs_f32(sleep_time));
         }
     }
 
@@ -141,18 +124,6 @@ impl Application {
 /// Systems management functions
 
 impl Application {
-    pub fn launch_signal_systems(&mut self, signal: ApplicationSignal) {
-        let mut world = World::new(&mut self.components);
-
-        if let Some(systems) = self.signal_systems.get_mut(&signal) {
-            for system in systems {
-                if let Some(entities) = self.entities.try_view(system.group()) {
-                    system.on_signal(entities, &mut world);
-                }
-            }
-        }
-    }
-
     pub fn launch_event_systems(&mut self, event: Box<dyn AnyEvent>) {
         let mut world = World::new(&mut self.components);
 
@@ -163,6 +134,8 @@ impl Application {
                 }
             }
         }
+
+        self.events.append(&mut world.events);
     }
 
     pub fn launch_tick_systems(&mut self, delta_time: f32) {
@@ -173,6 +146,8 @@ impl Application {
                 system.on_tick(delta_time, entities, &mut world);
             }
         }
+
+        self.events.append(&mut world.events);
     }
 }
 
@@ -193,7 +168,11 @@ impl Application {
                         }
 
                         for system in &mut self.join_systems {
-                            system.on_join(&[entity.clone()], &mut World::new(&mut self.components));
+                            let mut world = World::new(&mut self.components);
+
+                            system.on_join(&[entity.clone()], &mut world);
+
+                            self.events.append(&mut world.events);
                         }
                     }
 
@@ -240,7 +219,10 @@ impl Application {
                         }
 
                         for system in &mut self.quit_systems {
-                            system.on_quit(&[entity.clone()], &mut World::new(&mut self.components));
+                            let mut world = World::new(&mut self.components);
+
+                            system.on_quit(&[entity.clone()], &mut world);
+                            self.events.append(&mut world.events);
                         }
                     }
                 }

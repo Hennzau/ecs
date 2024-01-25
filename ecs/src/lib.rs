@@ -23,10 +23,12 @@ pub mod prelude {
                 Component,
             },
             system::System,
+            world::World
         },
         application::{
             Application,
-            builder::ApplicationBuilder
+            builder::ApplicationBuilder,
+            basic,
         },
     };
 }
