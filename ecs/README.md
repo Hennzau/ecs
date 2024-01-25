@@ -7,3 +7,5 @@ Our ECS is designed to minimize the amout of storages required to maintain a set
 access entities that possess a specific set of components.
 
 Check out the memory sub crate for more information [memory](https://github.com/Hennzau/hnz/blob/main/ecs/src/memory/README.md).
+
+You can see some examples of how to use the ECS in the examples in the directory 'examples'.
