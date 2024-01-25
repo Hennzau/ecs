@@ -23,7 +23,12 @@ pub mod prelude {
                 Component,
             },
             system::System,
-            world::World
+            world::World,
+            event::{
+                AnyEvent,
+                EventID,
+                Event,
+            }
         },
         application::{
             Application,

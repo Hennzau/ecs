@@ -69,6 +69,23 @@ pub fn derive_event(input: TokenStream) -> TokenStream {
                 return hasher.finish();
             }
 
+            fn event_id() -> u64 {
+                use std::{
+                    collections::hash_map::DefaultHasher,
+                    hash::{
+                        Hash,
+                        Hasher
+                    }
+                };
+
+                let id_str = std::any::type_name::<Self>();
+                let mut hasher = DefaultHasher::new();
+
+                id_str.hash(&mut hasher);
+
+                return hasher.finish();
+            }
+
             fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
                 return self as &mut dyn std::any::Any;
             }
