@@ -1,5 +1,12 @@
 use ecs::prelude::*;
-use winit::platform::pump_events::EventLoopExtPumpEvents;
+
+use winit::{
+    event::{
+        Event,
+        WindowEvent
+    },
+    platform::pump_events::EventLoopExtPumpEvents
+};
 
 use physics::maths::{
     Position2Di32,
@@ -69,26 +76,34 @@ impl System for WindowController {
         }
     }
 
-    fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
-        let timeout = Some(Duration::ZERO);
+    fn on_tick(&mut self, _delta_time: f32, entities: &[Entity], world: &mut World) {
+        let status = self.event_loop.pump_events(Some(std::time::Duration::ZERO), |event, event_loop| {
+            // Retrieve window event
+            if let Event::WindowEvent { event, window_id } = event {
+                // Retrieve all entities and get the window component
 
-        let status = self.event_loop.pump_events(timeout, |event, event_loop| {
-            for entity in entities {
-                let window = world.try_get_mut_component::<Window>(entity).unwrap();
-                if let Some (winit_window) = &mut window.winit_window {
-                    match event {
-                        winit::event::Event::WindowEvent {
-                            event: winit::event::WindowEvent::CloseRequested,
-                            window_id,
-                        } if window_id == window.id() => event_loop.exit(),
+                for entity in entities {
+                    let window = world.try_get_mut_component::<Window>(entity).unwrap();
+                    if let Some(winit_window) = &mut window.winit_window {
 
-                        winit::event::Event::AboutToWait => {
-                            window.request_redraw();
+                        // Match event and check if the window event is for the current window
+                        match event {
+                            WindowEvent::CloseRequested => {
+                                if winit_window.id() == window_id {
+                                    world.send_event(Box::new(basic::events::TryRemoveComponent {
+                                        entity: *entity,
+                                        component_id: Window::component_id()
+                                    }));
+
+                                    if entities.len() == 1 {
+                                        event_loop.exit();
+                                    }
+                                }
+                            },
+                            _ => {}
                         }
-                        _ => (),
                     }
                 }
-
             }
         });
 

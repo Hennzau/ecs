@@ -1,14 +1,23 @@
 pub mod events {
-    use crate::core::event::{
-        Event,
-        EventID,
-        AnyEvent
+    use crate::core::{
+        event::{
+            Event,
+            EventID,
+            AnyEvent
+        },
+        component::ComponentID
     };
 
     use ahash::RandomState;
 
     #[derive(Event)]
     pub struct CloseApplication {}
+
+    #[derive(Event)]
+    pub struct TryRemoveComponent {
+        pub entity: u64,
+        pub component_id: ComponentID,
+    }
 }
 
 pub mod components {

@@ -1,6 +1,8 @@
 use std::{
     collections::VecDeque,
-    time
+    time,
+    cell::RefCell,
+    rc::Rc,
 };
 
 use ahash::{
@@ -46,19 +48,19 @@ pub struct Application {
 
     events: VecDeque<Box<dyn AnyEvent>>,
 
-    event_systems: AHashMap<EventID, Vec<Box<dyn System>>>,
+    event_systems: AHashMap<EventID, Vec<Rc<RefCell<dyn System>>>>,
 
-    join_systems: Vec<Box<dyn System>>,
-    quit_systems: Vec<Box<dyn System>>,
-    tick_systems: Vec<Box<dyn System>>,
+    join_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
+    quit_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
+    tick_systems: Vec<Rc<RefCell<dyn System>>>,
 }
 
 impl Application {
     pub fn new(descriptor: MemoryMappingDescriptor,
-               event_systems: AHashMap<EventID, Vec<Box<dyn System>>>,
-               join_systems: Vec<Box<dyn System>>,
-               quit_systems: Vec<Box<dyn System>>,
-               tick_systems: Vec<Box<dyn System>>, ) -> Self {
+               event_systems: AHashMap<EventID, Vec<Rc<RefCell<dyn System>>>>,
+               join_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
+               quit_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
+               tick_systems: Vec<Rc<RefCell<dyn System>>>, ) -> Self {
         let mapping = MemoryMapping::new(descriptor);
 
         return Self {
@@ -103,6 +105,10 @@ impl Application {
                     break 'main;
                 }
 
+                if let Some(event) = event.as_any().downcast_ref::<basic::events::TryRemoveComponent>() {
+                    let _ = self.try_remove_any_component(&event.entity, event.component_id);
+                }
+
                 self.launch_event_systems(event);
             }
 
@@ -130,8 +136,10 @@ impl Application {
 
         if let Some(systems) = self.event_systems.get_mut(&event.id()) {
             for system in systems {
-                if let Some(entities) = self.entities.try_view(system.group()) {
-                    system.on_event(entities, &mut world, &event);
+                let group = system.borrow().group().clone();
+
+                if let Some(entities) = self.entities.try_view(group) {
+                    system.borrow_mut().on_event(entities, &mut world, &event);
                 }
             }
         }
@@ -143,8 +151,10 @@ impl Application {
         let mut world = World::new(&mut self.components);
 
         for system in &mut self.tick_systems {
-            if let Some(entities) = self.entities.try_view(system.group()) {
-                system.on_tick(delta_time, entities, &mut world);
+            let group = system.borrow().group().clone();
+
+            if let Some(entities) = self.entities.try_view(group) {
+                system.borrow_mut().on_tick(delta_time, entities, &mut world);
             }
         }
 
@@ -168,12 +178,14 @@ impl Application {
                             log::warn!("Error while adding entity to group: {:?}", e);
                         }
 
-                        for system in &mut self.join_systems {
-                            let mut world = World::new(&mut self.components);
+                        if let Some (systems) = self.join_systems.get_mut(&group) {
+                            for system in systems {
+                                let mut world = World::new(&mut self.components);
 
-                            system.on_join(&[entity.clone()], &mut world);
+                                system.borrow_mut().on_join(&[entity.clone()], &mut world);
 
-                            self.events.append(&mut world.events);
+                                self.events.append(&mut world.events);
+                            }
                         }
                     }
 
@@ -219,12 +231,16 @@ impl Application {
                             log::warn!("Error while removing entity from group: {:?}", e);
                         }
 
-                        for system in &mut self.quit_systems {
-                            let mut world = World::new(&mut self.components);
+                        if let Some (systems) = self.quit_systems.get_mut(&group) {
+                            for system in systems {
+                                let mut world = World::new(&mut self.components);
 
-                            system.on_quit(&[entity.clone()], &mut world);
-                            self.events.append(&mut world.events);
+                                system.borrow_mut().on_quit(&[entity.clone()], &mut world);
+
+                                self.events.append(&mut world.events);
+                            }
                         }
+
                     }
                 }
 

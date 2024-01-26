@@ -1,3 +1,8 @@
+use std::{
+    cell::RefCell,
+    rc::Rc
+};
+
 use simple_logger::SimpleLogger;
 
 use hnz::ecs::prelude::*;
@@ -91,10 +96,10 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_tick_system(Box::new(basic::systems::CloseApplication::new()));
-    builder.add_tick_system(Box::new(systems::Movement::new()));
+    builder.add_tick_system(Rc::new(RefCell::new(basic::systems::CloseApplication::new())));
+    builder.add_tick_system(Rc::new(RefCell::new(systems::Movement::new())));
 
-    builder.add_event_system(events::PrintPosition::event_id(), Box::new(systems::Movement::new()));
+    builder.add_event_system(events::PrintPosition::event_id(), Rc::new(RefCell::new(systems::Movement::new())));
 
     let mut app = builder.build();
 
