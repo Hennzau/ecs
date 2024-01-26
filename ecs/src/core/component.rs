@@ -25,7 +25,7 @@ pub trait AnyComponent {
 }
 
 /// Converts a list of ComponentIDs into the Group format by hashing the list of IDs.
-pub fn components_to_group(components: &AHashSet<ComponentID>) -> Group {
+pub fn group_id(components: &AHashSet<ComponentID>) -> Group {
     let mut result = 0 as u128;
 
     for component in components {

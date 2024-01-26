@@ -21,7 +21,7 @@ pub mod prelude {
                 AnyComponent,
                 ComponentID,
                 Component,
-                components_to_group
+                group_id
             },
             system::System,
             world::World,

@@ -126,10 +126,10 @@ fn main() {
     println!("A: {}", components::A::component_id());
     println!("B: {}", components::B::component_id());
     println!("C: {}", components::C::component_id());
-    println!("AB: {}", components_to_group(&vec![components::A::component_id(), components::B::component_id()].into_iter().collect()));
-    println!("AC: {}", components_to_group(&vec![components::A::component_id(), components::C::component_id()].into_iter().collect()));
-    println!("BC: {}", components_to_group(&vec![components::B::component_id(), components::C::component_id()].into_iter().collect()));
-    println!("ABC: {}", components_to_group(&vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect()));
+    println!("AB: {}", group_id(&vec![components::A::component_id(), components::B::component_id()].into_iter().collect()));
+    println!("AC: {}", group_id(&vec![components::A::component_id(), components::C::component_id()].into_iter().collect()));
+    println!("BC: {}", group_id(&vec![components::B::component_id(), components::C::component_id()].into_iter().collect()));
+    println!("ABC: {}", group_id(&vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect()));
 
     println!("Entities:\n====================");
 
@@ -139,11 +139,11 @@ fn main() {
 
     println!("Views:\n====================");
 
-    println!("A: {:?}", app.try_view(components_to_group(&vec![components::A::component_id()].into_iter().collect())));
-    println!("B: {:?}", app.try_view(components_to_group(&vec![components::B::component_id()].into_iter().collect())));
-    println!("C: {:?}", app.try_view(components_to_group(&vec![components::C::component_id()].into_iter().collect())));
-    println!("AB: {:?}", app.try_view(components_to_group(&vec![components::A::component_id(), components::B::component_id()].into_iter().collect())));
-    println!("AC: {:?}", app.try_view(components_to_group(&vec![components::A::component_id(), components::C::component_id()].into_iter().collect())));
-    println!("BC: {:?}", app.try_view(components_to_group(&vec![components::B::component_id(), components::C::component_id()].into_iter().collect())));
-    println!("ABC: {:?}", app.try_view(components_to_group(&vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect())));
+    println!("A: {:?}", app.try_view(group_id(&vec![components::A::component_id()].into_iter().collect())));
+    println!("B: {:?}", app.try_view(group_id(&vec![components::B::component_id()].into_iter().collect())));
+    println!("C: {:?}", app.try_view(group_id(&vec![components::C::component_id()].into_iter().collect())));
+    println!("AB: {:?}", app.try_view(group_id(&vec![components::A::component_id(), components::B::component_id()].into_iter().collect())));
+    println!("AC: {:?}", app.try_view(group_id(&vec![components::A::component_id(), components::C::component_id()].into_iter().collect())));
+    println!("BC: {:?}", app.try_view(group_id(&vec![components::B::component_id(), components::C::component_id()].into_iter().collect())));
+    println!("ABC: {:?}", app.try_view(group_id(&vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect())));
 }

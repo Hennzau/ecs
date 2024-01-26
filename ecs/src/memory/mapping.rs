@@ -22,7 +22,7 @@ use crate::{
     core::component::{
         ComponentID,
         Group,
-        components_to_group,
+        group_id,
     },
     memory::entities::Entities,
 };
@@ -64,7 +64,7 @@ impl MemoryMapping {
         let mut distances = AHashMap::new();
 
         for components_a in &descriptor {
-            let group_a = components_to_group(components_a);
+            let group_a = group_id(components_a);
             let igroup_a = -(group_a as IGroup);
 
             if !layer_one.contains_key(&group_a) {
@@ -82,7 +82,7 @@ impl MemoryMapping {
             }
 
             for components_b in &descriptor {
-                let group_b = components_to_group(components_b) as Group;
+                let group_b = group_id(components_b) as Group;
 
                 if second_strictly_contains_first(components_b, components_a) {
                     if !layer_one.contains_key(&group_b) {
@@ -190,11 +190,11 @@ impl MemoryMapping {
 
         for group in &self.descriptor {
             if group.iter().all(|x| previous_components.contains(x)) {
-                previous_groups.insert(components_to_group(group));
+                previous_groups.insert(group_id(group));
             }
 
             if group.iter().all(|x| previous_components.contains(x) || components_to_add.contains(x)) {
-                new_groups.insert(components_to_group(group));
+                new_groups.insert(group_id(group));
             }
         }
 

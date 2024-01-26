@@ -24,6 +24,19 @@ pub mod components {
     pub struct SendCloseEventAfterTime {
         pub time: f32,
     }
+
+    #[derive(Component)]
+    pub struct Label {
+        pub text: String,
+    }
+
+    impl Label {
+        pub fn new(text: String) -> Self {
+            return Self {
+                text
+            }
+        }
+    }
 }
 
 pub mod systems {

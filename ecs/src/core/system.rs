@@ -21,7 +21,7 @@ pub trait System {
     /// are in the same group
 
     fn group(&self) -> Group {
-        component::components_to_group(&self.components())
+        component::group_id(&self.components())
     }
 
     fn on_signal(&mut self, _entities: &[Entity], _world: &mut World) {}
