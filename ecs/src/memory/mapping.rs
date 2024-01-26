@@ -12,10 +12,10 @@
 /// The Hopcroft-Karp algorithm, initially recursive, aims to be transformed into an iterative approach.
 /// Referencing: https://www.baeldung.com/cs/convert-recursion-to-iteration
 
-use std::collections::{
-    HashMap,
-    HashSet,
-    VecDeque
+use std::collections::VecDeque;
+use ahash::{
+    AHashMap,
+    AHashSet
 };
 
 use crate::{
@@ -28,11 +28,11 @@ use crate::{
 };
 
 /// This type allows you to specify to the memory mapper the set of components you intend to use for your systems.
-pub type MemoryMappingDescriptor = Vec<HashSet<ComponentID>>;
+pub type MemoryMappingDescriptor = Vec<AHashSet<ComponentID>>;
 
-type IGroup = i128;
+type IGroup = i128; // We use i128 because we need to be able to represent -u64
 
-const INFTY: usize = usize::MAX;
+const INFTY: u64 = u64::MAX;
 
 /// This struct represents the memory mapper
 pub struct MemoryMapping {
@@ -40,28 +40,28 @@ pub struct MemoryMapping {
     pub descriptor: MemoryMappingDescriptor,
 
     /// Represents the first layer of the bipartite graph along with its corresponding calculated vertices in the second layer.
-    pub layer_one: HashMap<Group, Option<IGroup>>,
+    pub layer_one: AHashMap<Group, Option<IGroup>>,
 
     /// Represents the first second of the bipartite graph along with its corresponding calculated vertices in the first layer.
-    pub layer_two: HashMap<IGroup, Option<Group>>,
+    pub layer_two: AHashMap<IGroup, Option<Group>>,
 
     /// Describes neighbors in layer two corresponding to vertices in layer one.
-    pub layer_one_neighbors: HashMap<Group, Vec<IGroup>>,
+    pub layer_one_neighbors: AHashMap<Group, Vec<IGroup>>,
 
     /// Distances of each vertex from the source vertex.
-    pub distances: HashMap<Option<IGroup>, usize>,
+    pub distances: AHashMap<Option<IGroup>, u64>,
 }
 
 impl MemoryMapping {
     pub fn new(descriptor: MemoryMappingDescriptor) -> MemoryMapping {
-        fn second_strictly_contains_first(first: &HashSet<ComponentID>, second: &HashSet<ComponentID>) -> bool {
+        fn second_strictly_contains_first(first: &AHashSet<ComponentID>, second: &AHashSet<ComponentID>) -> bool {
             return first != second && first.is_subset(second);
         }
 
-        let mut layer_one = HashMap::new();
-        let mut layer_two = HashMap::new();
-        let mut layer_one_neighbors = HashMap::new();
-        let mut distances = HashMap::new();
+        let mut layer_one = AHashMap::new();
+        let mut layer_two = AHashMap::new();
+        let mut layer_one_neighbors = AHashMap::new();
+        let mut distances = AHashMap::new();
 
         for components_a in &descriptor {
             let group_a = components_to_group(components_a);
@@ -130,7 +130,7 @@ impl MemoryMapping {
     /// This function first constructs the mapping from the graph and then passes it to the Entities constructor.
     pub fn create_storage(&self) -> Entities {
         let mut groups = Vec::new();
-        let mut mapping = HashMap::new();
+        let mut mapping = AHashMap::new();
 
         for (u, v) in &self.layer_one {
             if mapping.contains_key(u) { continue; } // If u has already been mapped, juste ignored it
@@ -184,9 +184,9 @@ impl MemoryMapping {
     }
 
     /// Calculates the group to which an entity belongs when adding additional components to it, given its previous set of components.
-    pub fn get_next_membership(&self, previous_components: &HashSet<ComponentID>, components_to_add: &HashSet<ComponentID>) -> HashSet<Group> {
-        let mut previous_groups = HashSet::<Group>::new();
-        let mut new_groups = HashSet::<Group>::new();
+    pub fn get_next_membership(&self, previous_components: &AHashSet<ComponentID>, components_to_add: &AHashSet<ComponentID>) -> AHashSet<Group> {
+        let mut previous_groups = AHashSet::<Group>::new();
+        let mut new_groups = AHashSet::<Group>::new();
 
         for group in &self.descriptor {
             if group.iter().all(|x| previous_components.contains(x)) {
@@ -205,7 +205,7 @@ impl MemoryMapping {
     ///
     /// This function calculates new distances in the graph and updates them.
 
-    fn compute_distances(layer_one: &HashMap<Group, Option<IGroup>>, layer_two: &HashMap<IGroup, Option<Group>>, layer_one_neighbors: &HashMap<Group, Vec<IGroup>>, distances: &mut HashMap<Option<IGroup>, usize>) -> bool {
+    fn compute_distances(layer_one: &AHashMap<Group, Option<IGroup>>, layer_two: &AHashMap<IGroup, Option<Group>>, layer_one_neighbors: &AHashMap<Group, Vec<IGroup>>, distances: &mut AHashMap<Option<IGroup>, u64>) -> bool {
         let mut queue = VecDeque::<Option<Group>>::new();
 
         for (vertex, pair) in layer_one {
@@ -262,7 +262,7 @@ impl MemoryMapping {
 
     /// This function calculates the right pair according to the current calculated distances
 
-    fn compute_matching(vertex: Option<Group>, layer_one: &mut HashMap<Group, Option<IGroup>>, layer_two: &mut HashMap<IGroup, Option<Group>>, layer_one_neighbors: &HashMap<Group, Vec<IGroup>>, distances: &mut HashMap<Option<IGroup>, usize>) -> bool {
+    fn compute_matching(vertex: Option<Group>, layer_one: &mut AHashMap<Group, Option<IGroup>>, layer_two: &mut AHashMap<IGroup, Option<Group>>, layer_one_neighbors: &AHashMap<Group, Vec<IGroup>>, distances: &mut AHashMap<Option<IGroup>, u64>) -> bool {
         if let Some(vertex) = vertex {
             if let Some(neighbors) = layer_one_neighbors.get(&vertex).cloned() {
                 for v in neighbors {

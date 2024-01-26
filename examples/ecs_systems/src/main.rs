@@ -19,8 +19,6 @@ pub mod components {
 }
 
 pub mod systems {
-    use std::collections::HashSet;
-
     use hnz::ecs::prelude::*;
 
     use crate::components::{
@@ -31,10 +29,10 @@ pub mod systems {
     pub struct Movement {}
 
     impl System for Movement {
-        fn components(&self) -> HashSet<ComponentID> {
+        fn components(&self) -> AHashSet<ComponentID> {
             return vec![
-                Position2Df32::id(),
-                Velocity2Df32::id(),
+                Position2Df32::component_id(),
+                Velocity2Df32::component_id(),
             ].into_iter().collect();
         }
 

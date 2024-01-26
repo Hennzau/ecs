@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use ahash::AHashSet;
 
 use crate::core::{
     component,
@@ -15,7 +15,7 @@ use crate::core::{
 pub trait System {
     /// This function provides a way to know which components each system wants to use
 
-    fn components(&self) -> HashSet<ComponentID>;
+    fn components(&self) -> AHashSet<ComponentID>;
 
     /// Each system belongs to a certain group. Every system that use the same set of components
     /// are in the same group

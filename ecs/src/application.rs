@@ -1,10 +1,11 @@
 use std::{
-    collections::{
-        HashMap,
-        HashSet,
-        VecDeque
-    },
+    collections::VecDeque,
     time
+};
+
+use ahash::{
+    AHashSet,
+    AHashMap
 };
 
 use crate::{
@@ -41,11 +42,11 @@ pub struct Application {
     components: Components,
 
     next_entity: Entity,
-    components_tracker: HashMap<Entity, HashSet<ComponentID>>,
+    components_tracker: AHashMap<Entity, AHashSet<ComponentID>>,
 
     events: VecDeque<Box<dyn AnyEvent>>,
 
-    event_systems: HashMap<EventID, Vec<Box<dyn System>>>,
+    event_systems: AHashMap<EventID, Vec<Box<dyn System>>>,
 
     join_systems: Vec<Box<dyn System>>,
     quit_systems: Vec<Box<dyn System>>,
@@ -54,7 +55,7 @@ pub struct Application {
 
 impl Application {
     pub fn new(descriptor: MemoryMappingDescriptor,
-               event_systems: HashMap<EventID, Vec<Box<dyn System>>>,
+               event_systems: AHashMap<EventID, Vec<Box<dyn System>>>,
                join_systems: Vec<Box<dyn System>>,
                quit_systems: Vec<Box<dyn System>>,
                tick_systems: Vec<Box<dyn System>>, ) -> Self {
@@ -66,7 +67,7 @@ impl Application {
             mapping: mapping,
 
             next_entity: 0 as Entity,
-            components_tracker: HashMap::new(),
+            components_tracker: AHashMap::new(),
 
             events: VecDeque::new(),
 
@@ -81,7 +82,7 @@ impl Application {
     pub fn spawn(&mut self) -> Entity {
         let result = self.next_entity;
 
-        self.components_tracker.insert(self.next_entity as Entity, HashSet::new());
+        self.components_tracker.insert(self.next_entity as Entity, AHashSet::new());
         self.next_entity += 1;
 
         return result;
@@ -158,7 +159,7 @@ impl Application {
         return match self.components.try_add_any_component(entity, id, value) {
             Ok(()) => {
                 if let Some(previous_components) = self.components_tracker.get_mut(entity) {
-                    let groups = self.mapping.get_next_membership(&previous_components, &HashSet::from([id]));
+                    let groups = self.mapping.get_next_membership(&previous_components, &AHashSet::from([id]));
 
                     for group in groups {
                         let result = self.entities.try_add_group(group, &[entity.clone()]);
@@ -186,7 +187,7 @@ impl Application {
     }
 
     pub fn try_add_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Result<(), ()> {
-        return self.try_add_any_component(entity, T::id(), Box::from(value));
+        return self.try_add_any_component(entity, T::component_id(), Box::from(value));
     }
 
     pub fn try_add_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Option<&T> {
@@ -209,7 +210,7 @@ impl Application {
                 if let Some(previous_components) = self.components_tracker.get_mut(entity) {
                     previous_components.remove(&id);
 
-                    let groups = self.mapping.get_next_membership(&previous_components, &HashSet::from([id]));
+                    let groups = self.mapping.get_next_membership(&previous_components, &AHashSet::from([id]));
 
                     for group in groups {
                         let result = self.entities.try_remove_group(group, &[entity.clone()]);
@@ -234,11 +235,11 @@ impl Application {
     }
 
     pub fn try_remove_get_any_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<dyn AnyComponent>> {
-        return self.try_remove_any_component(entity, T::id()).ok();
+        return self.try_remove_any_component(entity, T::component_id()).ok();
     }
 
     pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Result<(), ()> {
-        return self.try_remove_any_component(entity, T::id()).map(|_| ());
+        return self.try_remove_any_component(entity, T::component_id()).map(|_| ());
     }
 
     pub fn try_get_any_component(&self, entity: &Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {

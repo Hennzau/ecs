@@ -1,6 +1,6 @@
-use std::collections::{
-    HashMap,
-    HashSet
+use ahash::{
+    AHashMap,
+    AHashSet
 };
 
 use crate::{
@@ -18,27 +18,27 @@ use crate::{
 };
 
 pub struct ApplicationBuilder {
-    event_systems: HashMap<EventID, Vec<Box<dyn System>>>,
+    event_systems: AHashMap<EventID, Vec<Box<dyn System>>>,
 
     join_systems: Vec<Box<dyn System>>,
     quit_systems: Vec<Box<dyn System>>,
     tick_systems: Vec<Box<dyn System>>,
 
     descriptor: MemoryMappingDescriptor,
-    seen: HashSet<Group>,
+    seen: AHashSet<Group>,
 }
 
 impl ApplicationBuilder {
     pub fn new() -> Self {
         return Self {
-            event_systems: HashMap::new(),
+            event_systems: AHashMap::new(),
 
             join_systems: Vec::new(),
             quit_systems: Vec::new(),
             tick_systems: Vec::new(),
 
             descriptor: MemoryMappingDescriptor::new(),
-            seen: HashSet::new()
+            seen: AHashSet::new()
         }
     }
 

@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use ecs::prelude::*;
 
 use crate::maths;
@@ -7,8 +5,8 @@ use crate::maths;
 pub struct Movementf32 {}
 
 impl System for Movementf32 {
-    fn components(&self) -> HashSet<ComponentID> {
-        return vec![maths::Position2Df32::id(), maths::Velocity2Df32::id()].into_iter().collect();
+    fn components(&self) -> AHashSet<ComponentID> {
+        return vec![maths::Position2Df32::component_id(), maths::Velocity2Df32::component_id()].into_iter().collect();
     }
 
     fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
@@ -30,8 +28,8 @@ impl System for Movementf32 {
 pub struct Movementi32 {}
 
 impl System for Movementi32 {
-    fn components(&self) -> HashSet<ComponentID> {
-        return vec![maths::Position2Di32::id(), maths::Velocity2Di32::id()].into_iter().collect();
+    fn components(&self) -> AHashSet<ComponentID> {
+        return vec![maths::Position2Di32::component_id(), maths::Velocity2Di32::component_id()].into_iter().collect();
     }
 
     fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {

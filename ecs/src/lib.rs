@@ -21,6 +21,7 @@ pub mod prelude {
                 AnyComponent,
                 ComponentID,
                 Component,
+                components_to_group
             },
             system::System,
             world::World,
@@ -35,5 +36,11 @@ pub mod prelude {
             builder::ApplicationBuilder,
             basic,
         },
+    };
+
+    pub use ahash::{
+        AHashSet,
+        AHashMap,
+        RandomState,
     };
 }

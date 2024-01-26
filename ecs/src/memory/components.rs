@@ -2,7 +2,7 @@
 /// It aims to be a simple and efficient way to store components : user can add, remove and get components easily
 /// and efficiently.
 
-use std::collections::HashMap;
+use ahash::AHashMap;
 
 use crate::core::{
     entity::Entity,
@@ -18,10 +18,10 @@ pub struct Components {
     components: Vec<Vec<Box<dyn AnyComponent>>>,
 
     /// Each element corresponds to indices from the pool of components of the same type.
-    indices: Vec<HashMap<Entity, usize>>,
+    indices: Vec<AHashMap<Entity, usize>>,
 
     /// This map is used to find the right pool of components from the component ID.
-    map: HashMap<ComponentID, usize>,
+    map: AHashMap<ComponentID, usize>,
 }
 
 impl Components {
@@ -30,7 +30,7 @@ impl Components {
         return Self {
             components: Vec::new(),
             indices: Vec::new(),
-            map: HashMap::new(),
+            map: AHashMap::new(),
         };
     }
 
@@ -83,7 +83,7 @@ impl Components {
         } else {
             let index = self.components.len();
             self.components.push(vec![value]);
-            self.indices.push(HashMap::from([(entity.clone(), 0)]));
+            self.indices.push(AHashMap::from([(entity.clone(), 0)]));
             self.map.insert(id, index);
 
             return Ok(());
@@ -139,11 +139,11 @@ impl Components {
 
     /// Returns a reference to the component of the given entity if it exists.
     pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
-        return Self::convert_ok(self.try_get_any_component(entity, T::id()));
+        return Self::convert_ok(self.try_get_any_component(entity, T::component_id()));
     }
 
     /// Returns a mutable reference to the component of the given entity if it exists.
     pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
-        return Self::convert_mut_ok(self.try_get_any_mut_component(entity, T::id()));
+        return Self::convert_mut_ok(self.try_get_any_mut_component(entity, T::component_id()));
     }
 }

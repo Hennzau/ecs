@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 ecs-macros = { path = "ecs-macros" }
 log = "0.4.20"
+ahash = "0.8.7"

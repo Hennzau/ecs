@@ -1,8 +1,11 @@
 pub mod events {
     use crate::core::event::{
         Event,
+        EventID,
         AnyEvent
     };
+
+    use ahash::RandomState;
 
     #[derive(Event)]
     pub struct CloseApplication {}
@@ -11,8 +14,11 @@ pub mod events {
 pub mod components {
     use crate::core::component::{
         Component,
+        ComponentID,
         AnyComponent
     };
+
+    use ahash::RandomState;
 
     #[derive(Component)]
     pub struct SendCloseEventAfterTime {
@@ -21,7 +27,7 @@ pub mod components {
 }
 
 pub mod systems {
-    use std::collections::HashSet;
+    use ahash::AHashSet;
 
     use crate::{
         application::basic::{
@@ -46,7 +52,7 @@ pub mod systems {
     }
 
     impl CloseApplication {
-        pub fn new () -> Self {
+        pub fn new() -> Self {
             return Self {
                 time: 0.0
             }
@@ -54,9 +60,9 @@ pub mod systems {
     }
 
     impl System for CloseApplication {
-        fn components(&self) -> HashSet<ComponentID> {
+        fn components(&self) -> AHashSet<ComponentID> {
             return vec![
-                SendCloseEventAfterTime::id()
+                SendCloseEventAfterTime::component_id()
             ].into_iter().collect();
         }
 

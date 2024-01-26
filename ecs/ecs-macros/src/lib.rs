@@ -14,21 +14,20 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl AnyComponent for #name {
-            fn id() -> u64 {
-                use std::{
-                    collections::hash_map::DefaultHasher,
-                    hash::{
-                        Hash,
-                        Hasher
-                    }
-                };
+            fn id(&self) -> ComponentID {
+                let hasher = RandomState::with_seed(0);
 
                 let id_str = std::any::type_name::<Self>();
-                let mut hasher = DefaultHasher::new();
 
-                id_str.hash(&mut hasher);
+                return hasher.hash_one(id_str);
+            }
 
-                return hasher.finish();
+            fn component_id() -> ComponentID {
+                let hasher = RandomState::with_seed(0);
+
+                let id_str = std::any::type_name::<Self>();
+
+                return hasher.hash_one(id_str);
             }
 
             fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
@@ -52,38 +51,20 @@ pub fn derive_event(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl AnyEvent for #name {
-            fn id(&self) -> u64 {
-                use std::{
-                    collections::hash_map::DefaultHasher,
-                    hash::{
-                        Hash,
-                        Hasher
-                    }
-                };
+            fn id(&self) -> EventID {
+                let hasher = RandomState::with_seed(0);
 
                 let id_str = std::any::type_name::<Self>();
-                let mut hasher = DefaultHasher::new();
 
-                id_str.hash(&mut hasher);
-
-                return hasher.finish();
+                return hasher.hash_one(id_str);
             }
 
-            fn event_id() -> u64 {
-                use std::{
-                    collections::hash_map::DefaultHasher,
-                    hash::{
-                        Hash,
-                        Hasher
-                    }
-                };
+            fn event_id() -> EventID {
+                let hasher = RandomState::with_seed(0);
 
                 let id_str = std::any::type_name::<Self>();
-                let mut hasher = DefaultHasher::new();
 
-                id_str.hash(&mut hasher);
-
-                return hasher.finish();
+                return hasher.hash_one(id_str);
             }
 
             fn as_any_mut(&mut self) -> &mut dyn std::any::Any {

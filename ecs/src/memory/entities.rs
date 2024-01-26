@@ -7,7 +7,7 @@
 /// notably Skypjack in his blog: https://skypjack.github.io/ for EnTT.
 /// It involves smart swapping strategies to avoid fragmenting the main array.
 
-use std::collections::HashMap;
+use ahash::AHashMap;
 
 use crate::core::{
     entity::Entity,
@@ -29,11 +29,11 @@ pub struct Entities {
     groups: Vec<Vec<usize>>,
 
     /// This 'indices' array provides a way to track entities of a group inside de 'packed/dense' array
-    indices: Vec<HashMap<Entity, usize>>,
+    indices: Vec<AHashMap<Entity, usize>>,
 
     /// This map correlates a Group with its index in the 'groups' (global group) array mentioned earlier,
     /// along with the 'in_index' representing the index of the corresponding nested group.
-    map: HashMap<Group, (usize, usize)>,
+    map: AHashMap<Group, (usize, usize)>,
 }
 
 /// This submodule comprises various structures designed to manage errors encountered during
@@ -93,13 +93,13 @@ pub mod entities_errors {
 
 impl Entities {
     /// Creates a new instance initializing internal data structures based on provided groups and mapping.
-    pub fn new(groups: Vec<Vec<usize>>, map: HashMap<Group, (usize, usize)>) -> Self {
+    pub fn new(groups: Vec<Vec<usize>>, map: AHashMap<Group, (usize, usize)>) -> Self {
         let mut entities = Vec::new();
         let mut indices = Vec::new();
 
         for _ in 0..groups.len() {
             entities.push(Vec::new());
-            indices.push(HashMap::new());
+            indices.push(AHashMap::new());
         }
 
         return Self {

@@ -7,10 +7,7 @@
 
 use simple_logger::SimpleLogger;
 
-use hnz::ecs::{
-    prelude::*,
-    core::component::components_to_group
-};
+use hnz::ecs::prelude::*;
 
 pub mod components {
     use hnz::ecs::prelude::*;
@@ -26,7 +23,6 @@ pub mod components {
 }
 
 pub mod systems {
-    use std::collections::HashSet;
     use hnz::ecs::prelude::*;
 
     use crate::components;
@@ -34,56 +30,56 @@ pub mod systems {
     pub struct A {}
 
     impl System for A {
-        fn components(&self) -> HashSet<ComponentID> {
-            return vec![components::A::id()].into_iter().collect();
+        fn components(&self) -> AHashSet<ComponentID> {
+            return vec![components::A::component_id()].into_iter().collect();
         }
     }
 
     pub struct B {}
 
     impl System for B {
-        fn components(&self) -> HashSet<ComponentID> {
-            return vec![components::B::id()].into_iter().collect();
+        fn components(&self) -> AHashSet<ComponentID> {
+            return vec![components::B::component_id()].into_iter().collect();
         }
     }
 
     pub struct C {}
 
     impl System for C {
-        fn components(&self) -> HashSet<ComponentID> {
-            return vec![components::C::id()].into_iter().collect();
+        fn components(&self) -> AHashSet<ComponentID> {
+            return vec![components::C::component_id()].into_iter().collect();
         }
     }
 
     pub struct AB {}
 
     impl System for AB {
-        fn components(&self) -> HashSet<ComponentID> {
-            return vec![components::A::id(), components::B::id()].into_iter().collect();
+        fn components(&self) -> AHashSet<ComponentID> {
+            return vec![components::A::component_id(), components::B::component_id()].into_iter().collect();
         }
     }
 
     pub struct AC {}
 
     impl System for AC {
-        fn components(&self) -> HashSet<ComponentID> {
-            return vec![components::A::id(), components::C::id()].into_iter().collect();
+        fn components(&self) -> AHashSet<ComponentID> {
+            return vec![components::A::component_id(), components::C::component_id()].into_iter().collect();
         }
     }
 
     pub struct BC {}
 
     impl System for BC {
-        fn components(&self) -> HashSet<ComponentID> {
-            return vec![components::B::id(), components::C::id()].into_iter().collect();
+        fn components(&self) -> AHashSet<ComponentID> {
+            return vec![components::B::component_id(), components::C::component_id()].into_iter().collect();
         }
     }
 
     pub struct ABC {}
 
     impl System for ABC {
-        fn components(&self) -> HashSet<ComponentID> {
-            return vec![components::A::id(), components::B::id(), components::C::id()].into_iter().collect();
+        fn components(&self) -> AHashSet<ComponentID> {
+            return vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect();
         }
     }
 }
@@ -127,13 +123,13 @@ fn main() {
         entities.push(entity);
     }
 
-    println!("A: {}", components::A::id());
-    println!("B: {}", components::B::id());
-    println!("C: {}", components::C::id());
-    println!("AB: {}", components_to_group(&vec![components::A::id(), components::B::id()].into_iter().collect()));
-    println!("AC: {}", components_to_group(&vec![components::A::id(), components::C::id()].into_iter().collect()));
-    println!("BC: {}", components_to_group(&vec![components::B::id(), components::C::id()].into_iter().collect()));
-    println!("ABC: {}", components_to_group(&vec![components::A::id(), components::B::id(), components::C::id()].into_iter().collect()));
+    println!("A: {}", components::A::component_id());
+    println!("B: {}", components::B::component_id());
+    println!("C: {}", components::C::component_id());
+    println!("AB: {}", components_to_group(&vec![components::A::component_id(), components::B::component_id()].into_iter().collect()));
+    println!("AC: {}", components_to_group(&vec![components::A::component_id(), components::C::component_id()].into_iter().collect()));
+    println!("BC: {}", components_to_group(&vec![components::B::component_id(), components::C::component_id()].into_iter().collect()));
+    println!("ABC: {}", components_to_group(&vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect()));
 
     println!("Entities:\n====================");
 
@@ -143,11 +139,11 @@ fn main() {
 
     println!("Views:\n====================");
 
-    println!("A: {:?}", app.try_view(components_to_group(&vec![components::A::id()].into_iter().collect())));
-    println!("B: {:?}", app.try_view(components_to_group(&vec![components::B::id()].into_iter().collect())));
-    println!("C: {:?}", app.try_view(components_to_group(&vec![components::C::id()].into_iter().collect())));
-    println!("AB: {:?}", app.try_view(components_to_group(&vec![components::A::id(), components::B::id()].into_iter().collect())));
-    println!("AC: {:?}", app.try_view(components_to_group(&vec![components::A::id(), components::C::id()].into_iter().collect())));
-    println!("BC: {:?}", app.try_view(components_to_group(&vec![components::B::id(), components::C::id()].into_iter().collect())));
-    println!("ABC: {:?}", app.try_view(components_to_group(&vec![components::A::id(), components::B::id(), components::C::id()].into_iter().collect())));
+    println!("A: {:?}", app.try_view(components_to_group(&vec![components::A::component_id()].into_iter().collect())));
+    println!("B: {:?}", app.try_view(components_to_group(&vec![components::B::component_id()].into_iter().collect())));
+    println!("C: {:?}", app.try_view(components_to_group(&vec![components::C::component_id()].into_iter().collect())));
+    println!("AB: {:?}", app.try_view(components_to_group(&vec![components::A::component_id(), components::B::component_id()].into_iter().collect())));
+    println!("AC: {:?}", app.try_view(components_to_group(&vec![components::A::component_id(), components::C::component_id()].into_iter().collect())));
+    println!("BC: {:?}", app.try_view(components_to_group(&vec![components::B::component_id(), components::C::component_id()].into_iter().collect())));
+    println!("ABC: {:?}", app.try_view(components_to_group(&vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect())));
 }
