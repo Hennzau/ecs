@@ -12,17 +12,17 @@ use crate::{
     },
     core::{
         event::EventID,
-        system::SharedSystem,
+        system::CustomSystem,
         component::Group,
     },
 };
 
 pub struct ApplicationBuilder {
-    event_systems: AHashMap<EventID, Vec<SharedSystem>>,
+    event_systems: AHashMap<EventID, Vec<CustomSystem>>,
 
-    join_systems: AHashMap<Group, Vec<SharedSystem>>,
-    quit_systems: AHashMap<Group, Vec<SharedSystem>>,
-    tick_systems: Vec<SharedSystem>,
+    join_systems: AHashMap<Group, Vec<CustomSystem>>,
+    quit_systems: AHashMap<Group, Vec<CustomSystem>>,
+    tick_systems: Vec<CustomSystem>,
 
     descriptor: MemoryMappingDescriptor,
     seen: AHashSet<Group>,
@@ -52,7 +52,7 @@ impl ApplicationBuilder {
         );
     }
 
-    pub fn add_event_system(&mut self, event: EventID, system: SharedSystem) {
+    pub fn add_event_system(&mut self, event: EventID, system: CustomSystem) {
         if !self.event_systems.contains_key(&event) {
             self.event_systems.insert(event, Vec::new());
         }
@@ -65,7 +65,7 @@ impl ApplicationBuilder {
         self.event_systems.get_mut(&event).unwrap().push(system);
     }
 
-    pub fn add_join_system(&mut self, system: SharedSystem) {
+    pub fn add_join_system(&mut self, system: CustomSystem) {
         if !self.seen.contains(&system.borrow().group()) {
             self.descriptor.push(system.borrow().components());
             self.seen.insert(system.borrow().group());
@@ -80,7 +80,7 @@ impl ApplicationBuilder {
         self.join_systems.get_mut(&group).unwrap().push(system);
     }
 
-    pub fn add_quit_system(&mut self, system: SharedSystem) {
+    pub fn add_quit_system(&mut self, system: CustomSystem) {
         if !self.seen.contains(&system.borrow().group()) {
             self.descriptor.push(system.borrow().components());
             self.seen.insert(system.borrow().group());
@@ -95,7 +95,7 @@ impl ApplicationBuilder {
         self.quit_systems.get_mut(&group).unwrap().push(system);
     }
 
-    pub fn add_tick_system(&mut self, system: SharedSystem) {
+    pub fn add_tick_system(&mut self, system: CustomSystem) {
         if !self.seen.contains(&system.borrow().group()) {
             self.descriptor.push(system.borrow().components());
             self.seen.insert(system.borrow().group());

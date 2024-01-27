@@ -28,7 +28,7 @@ use crate::{
             EventID,
             AnyEvent,
         },
-        system::SharedSystem,
+        system::CustomSystem,
         world::World,
     },
 };
@@ -46,19 +46,19 @@ pub struct Application {
 
     events: VecDeque<Box<dyn AnyEvent>>,
 
-    event_systems: AHashMap<EventID, Vec<SharedSystem>>,
+    event_systems: AHashMap<EventID, Vec<CustomSystem>>,
 
-    join_systems: AHashMap<Group, Vec<SharedSystem>>,
-    quit_systems: AHashMap<Group, Vec<SharedSystem>>,
-    tick_systems: Vec<SharedSystem>,
+    join_systems: AHashMap<Group, Vec<CustomSystem>>,
+    quit_systems: AHashMap<Group, Vec<CustomSystem>>,
+    tick_systems: Vec<CustomSystem>,
 }
 
 impl Application {
     pub fn new(descriptor: MemoryMappingDescriptor,
-               event_systems: AHashMap<EventID, Vec<SharedSystem>>,
-               join_systems: AHashMap<Group, Vec<SharedSystem>>,
-               quit_systems: AHashMap<Group, Vec<SharedSystem>>,
-               tick_systems: Vec<SharedSystem>) -> Self {
+               event_systems: AHashMap<EventID, Vec<CustomSystem>>,
+               join_systems: AHashMap<Group, Vec<CustomSystem>>,
+               quit_systems: AHashMap<Group, Vec<CustomSystem>>,
+               tick_systems: Vec<CustomSystem>) -> Self {
         let mapping = MemoryMapping::new(descriptor);
 
         return Self {

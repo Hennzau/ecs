@@ -18,11 +18,11 @@ use crate::core::{
 
 /// A SharedSystem is a system that is intended to be used for multiple application functions (on_join, on_tick etc...)
 /// and that needs to communicate data from its functions.
-pub type SharedSystem = Rc::<RefCell<dyn System>>;
+pub type CustomSystem = Rc::<RefCell<dyn System>>;
 
-pub struct CustomSharedSystem {}
+pub struct SystemBuilder {}
 
-impl CustomSharedSystem {
+impl SystemBuilder {
     pub fn new<T: System>(value: T) -> Rc::<RefCell<T>> {
         return Rc::new(RefCell::new(value));
     }

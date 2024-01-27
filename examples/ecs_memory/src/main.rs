@@ -88,13 +88,13 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_join_system(CustomSharedSystem::new(systems::A {}));
-    builder.add_join_system(CustomSharedSystem::new(systems::B {}));
-    builder.add_join_system(CustomSharedSystem::new(systems::C {}));
-    builder.add_join_system(CustomSharedSystem::new(systems::AB {}));
-    builder.add_join_system(CustomSharedSystem::new(systems::AC {}));
-    builder.add_join_system(CustomSharedSystem::new(systems::BC {}));
-    builder.add_join_system(CustomSharedSystem::new(systems::ABC {}));
+    builder.add_join_system(SystemBuilder::new(systems::A {}));
+    builder.add_join_system(SystemBuilder::new(systems::B {}));
+    builder.add_join_system(SystemBuilder::new(systems::C {}));
+    builder.add_join_system(SystemBuilder::new(systems::AB {}));
+    builder.add_join_system(SystemBuilder::new(systems::AC {}));
+    builder.add_join_system(SystemBuilder::new(systems::BC {}));
+    builder.add_join_system(SystemBuilder::new(systems::ABC {}));
 
     let mut app = builder.build();
 

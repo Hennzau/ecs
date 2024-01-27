@@ -24,9 +24,9 @@ pub mod prelude {
                 group_id,
             },
             system::{
-                SharedSystem,
-                CustomSharedSystem,
+                CustomSystem,
                 System,
+                SystemBuilder
             },
             world::World,
             event::{
