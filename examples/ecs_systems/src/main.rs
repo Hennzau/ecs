@@ -1,10 +1,5 @@
 use simple_logger::SimpleLogger;
 
-use std::{
-    cell::RefCell,
-    rc::Rc
-};
-
 use hnz::ecs::prelude::*;
 
 pub mod components {
@@ -28,7 +23,7 @@ pub mod systems {
 
     use crate::components::{
         Position2Df32,
-        Velocity2Df32
+        Velocity2Df32,
     };
 
     pub struct Movement {}
@@ -62,8 +57,8 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_tick_system(Rc::new(RefCell::new(basic::systems::CloseApplication::new())));
-    builder.add_tick_system(Rc::new(RefCell::new(systems::Movement {})));
+    builder.add_tick_system(CustomSharedSystem::new(basic::systems::CloseApplication::new()));
+    builder.add_tick_system(CustomSharedSystem::new(systems::Movement {}));
 
     let mut app = builder.build();
 

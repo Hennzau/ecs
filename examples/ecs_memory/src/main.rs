@@ -4,10 +4,6 @@
 /// component A to every entity that have a even index, component B to every entity that have a multiple of 3 and
 /// component C to every entity that have a multiple of 4. Then, every entity that have a multiple of 8 will be removed
 /// from component A and C.
-use std::{
-    cell::RefCell,
-    rc::Rc
-};
 
 use simple_logger::SimpleLogger;
 
@@ -92,13 +88,13 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_join_system(Rc::new (RefCell::new(systems::A {})));
-    builder.add_join_system(Rc::new (RefCell::new(systems::B {})));
-    builder.add_join_system(Rc::new (RefCell::new(systems::C {})));
-    builder.add_join_system(Rc::new (RefCell::new(systems::AB {})));
-    builder.add_join_system(Rc::new (RefCell::new(systems::AC {})));
-    builder.add_join_system(Rc::new (RefCell::new(systems::BC {})));
-    builder.add_join_system(Rc::new (RefCell::new(systems::ABC {})));
+    builder.add_join_system(CustomSharedSystem::new(systems::A {}));
+    builder.add_join_system(CustomSharedSystem::new(systems::B {}));
+    builder.add_join_system(CustomSharedSystem::new(systems::C {}));
+    builder.add_join_system(CustomSharedSystem::new(systems::AB {}));
+    builder.add_join_system(CustomSharedSystem::new(systems::AC {}));
+    builder.add_join_system(CustomSharedSystem::new(systems::BC {}));
+    builder.add_join_system(CustomSharedSystem::new(systems::ABC {}));
 
     let mut app = builder.build();
 

@@ -21,15 +21,19 @@ pub mod prelude {
                 AnyComponent,
                 ComponentID,
                 Component,
-                group_id
+                group_id,
             },
-            system::System,
+            system::{
+                SharedSystem,
+                CustomSharedSystem,
+                System,
+            },
             world::World,
             event::{
                 AnyEvent,
                 EventID,
                 Event,
-            }
+            },
         },
         application::{
             Application,

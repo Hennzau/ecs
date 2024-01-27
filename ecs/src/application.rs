@@ -1,13 +1,11 @@
 use std::{
     collections::VecDeque,
     time,
-    cell::RefCell,
-    rc::Rc,
 };
 
 use ahash::{
     AHashSet,
-    AHashMap
+    AHashMap,
 };
 
 use crate::{
@@ -23,15 +21,15 @@ use crate::{
         component::{
             Group,
             ComponentID,
-            AnyComponent
+            AnyComponent,
         },
         entity::Entity,
         event::{
             EventID,
             AnyEvent,
         },
-        system::System,
-        world::World
+        system::SharedSystem,
+        world::World,
     },
 };
 
@@ -48,19 +46,19 @@ pub struct Application {
 
     events: VecDeque<Box<dyn AnyEvent>>,
 
-    event_systems: AHashMap<EventID, Vec<Rc<RefCell<dyn System>>>>,
+    event_systems: AHashMap<EventID, Vec<SharedSystem>>,
 
-    join_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
-    quit_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
-    tick_systems: Vec<Rc<RefCell<dyn System>>>,
+    join_systems: AHashMap<Group, Vec<SharedSystem>>,
+    quit_systems: AHashMap<Group, Vec<SharedSystem>>,
+    tick_systems: Vec<SharedSystem>,
 }
 
 impl Application {
     pub fn new(descriptor: MemoryMappingDescriptor,
-               event_systems: AHashMap<EventID, Vec<Rc<RefCell<dyn System>>>>,
-               join_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
-               quit_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
-               tick_systems: Vec<Rc<RefCell<dyn System>>>, ) -> Self {
+               event_systems: AHashMap<EventID, Vec<SharedSystem>>,
+               join_systems: AHashMap<Group, Vec<SharedSystem>>,
+               quit_systems: AHashMap<Group, Vec<SharedSystem>>,
+               tick_systems: Vec<SharedSystem>) -> Self {
         let mapping = MemoryMapping::new(descriptor);
 
         return Self {
@@ -178,7 +176,7 @@ impl Application {
                             log::warn!("Error while adding entity to group: {:?}", e);
                         }
 
-                        if let Some (systems) = self.join_systems.get_mut(&group) {
+                        if let Some(systems) = self.join_systems.get_mut(&group) {
                             for system in systems {
                                 let mut world = World::new(&mut self.components);
 
@@ -231,7 +229,7 @@ impl Application {
                             log::warn!("Error while removing entity from group: {:?}", e);
                         }
 
-                        if let Some (systems) = self.quit_systems.get_mut(&group) {
+                        if let Some(systems) = self.quit_systems.get_mut(&group) {
                             for system in systems {
                                 let mut world = World::new(&mut self.components);
 
@@ -240,7 +238,6 @@ impl Application {
                                 self.events.append(&mut world.events);
                             }
                         }
-
                     }
                 }
 
@@ -274,4 +271,3 @@ impl Application {
         return self.components.try_get_mut_component::<T>(entity);
     }
 }
-

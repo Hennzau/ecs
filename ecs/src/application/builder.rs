@@ -1,11 +1,6 @@
-use std::{
-    cell::RefCell,
-    rc::Rc
-};
-
 use ahash::{
     AHashMap,
-    AHashSet
+    AHashSet,
 };
 
 use crate::{
@@ -17,17 +12,17 @@ use crate::{
     },
     core::{
         event::EventID,
-        system::System,
-        component::Group
+        system::SharedSystem,
+        component::Group,
     },
 };
 
 pub struct ApplicationBuilder {
-    event_systems: AHashMap<EventID, Vec<Rc<RefCell<dyn System>>>>,
+    event_systems: AHashMap<EventID, Vec<SharedSystem>>,
 
-    join_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
-    quit_systems: AHashMap<Group, Vec<Rc<RefCell<dyn System>>>>,
-    tick_systems: Vec<Rc<RefCell<dyn System>>>,
+    join_systems: AHashMap<Group, Vec<SharedSystem>>,
+    quit_systems: AHashMap<Group, Vec<SharedSystem>>,
+    tick_systems: Vec<SharedSystem>,
 
     descriptor: MemoryMappingDescriptor,
     seen: AHashSet<Group>,
@@ -43,8 +38,8 @@ impl ApplicationBuilder {
             tick_systems: Vec::new(),
 
             descriptor: MemoryMappingDescriptor::new(),
-            seen: AHashSet::new()
-        }
+            seen: AHashSet::new(),
+        };
     }
 
     pub fn build(self) -> Application {
@@ -54,10 +49,10 @@ impl ApplicationBuilder {
             self.join_systems,
             self.quit_systems,
             self.tick_systems,
-        )
+        );
     }
 
-    pub fn add_event_system(&mut self, event: EventID, system: Rc<RefCell<dyn System>>) {
+    pub fn add_event_system(&mut self, event: EventID, system: SharedSystem) {
         if !self.event_systems.contains_key(&event) {
             self.event_systems.insert(event, Vec::new());
         }
@@ -70,7 +65,7 @@ impl ApplicationBuilder {
         self.event_systems.get_mut(&event).unwrap().push(system);
     }
 
-    pub fn add_join_system(&mut self, system: Rc<RefCell<dyn System>>) {
+    pub fn add_join_system(&mut self, system: SharedSystem) {
         if !self.seen.contains(&system.borrow().group()) {
             self.descriptor.push(system.borrow().components());
             self.seen.insert(system.borrow().group());
@@ -85,7 +80,7 @@ impl ApplicationBuilder {
         self.join_systems.get_mut(&group).unwrap().push(system);
     }
 
-    pub fn add_quit_system(&mut self, system: Rc<RefCell<dyn System>>) {
+    pub fn add_quit_system(&mut self, system: SharedSystem) {
         if !self.seen.contains(&system.borrow().group()) {
             self.descriptor.push(system.borrow().components());
             self.seen.insert(system.borrow().group());
@@ -100,7 +95,7 @@ impl ApplicationBuilder {
         self.quit_systems.get_mut(&group).unwrap().push(system);
     }
 
-    pub fn add_tick_system(&mut self, system: Rc<RefCell<dyn System>>) {
+    pub fn add_tick_system(&mut self, system: SharedSystem) {
         if !self.seen.contains(&system.borrow().group()) {
             self.descriptor.push(system.borrow().components());
             self.seen.insert(system.borrow().group());
