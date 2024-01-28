@@ -63,7 +63,7 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_systems(vec! [
+    builder.add_systems(vec![
         basic::systems::CloseApplication::new(),
         systems::Movement::new()
     ], vec![SystemType::TICK].into_iter().collect());
@@ -76,15 +76,13 @@ fn main() {
     });
 
     let entity = app.spawn();
-    let _ = app.try_add_component(&entity, components::Position2Df32 {
+    let _ = app.bundle(entity).add_component(components::Position2Df32 {
         x: 0.0,
         y: 0.0,
-    });
-
-    let _ = app.try_add_component(&entity, components::Velocity2Df32 {
+    }).add_component(components::Velocity2Df32 {
         vx: 0.5,
         vy: 1.0,
-    });
+    }).try_build();
 
     app.run(60f32);
 

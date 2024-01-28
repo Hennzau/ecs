@@ -35,6 +35,7 @@ use crate::{
 
 pub mod builder;
 pub mod basic;
+pub mod bundle;
 
 pub struct Application {
     mapping: MemoryMapping,
@@ -170,6 +171,10 @@ impl Application {
 /// Components management functions
 
 impl Application {
+    pub fn bundle(&mut self, entity: Entity) -> bundle::Bundle {
+        return bundle::Bundle::new(entity, self);
+    }
+
     pub fn try_add_any_component(&mut self, entity: &Entity, id: ComponentID, value: Box<dyn AnyComponent>) -> Result<(), ()> {
         return match self.components.try_add_any_component(entity, id, value) {
             Ok(()) => {
