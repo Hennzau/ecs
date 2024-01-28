@@ -3,14 +3,14 @@ use ecs::prelude::*;
 use winit::{
     event::{
         Event,
-        WindowEvent
+        WindowEvent,
     },
-    platform::pump_events::EventLoopExtPumpEvents
+    platform::pump_events::EventLoopExtPumpEvents,
 };
 
 use physics::maths::{
     Position2Di32,
-    Scale2Du32
+    Scale2Du32,
 };
 
 type WinitWindow = winit::window::Window;
@@ -18,14 +18,14 @@ type WinitEventLoop = winit::event_loop::EventLoop<()>;
 
 #[derive(Component)]
 pub struct Window {
-    pub winit_window: Option<WinitWindow>
+    pub winit_window: Option<WinitWindow>,
 }
 
 impl Window {
     pub fn new() -> Self {
         return Self {
             winit_window: None
-        }
+        };
     }
 }
 
@@ -34,10 +34,10 @@ pub struct WindowController {
 }
 
 impl WindowController {
-    pub fn new() -> Self {
-        return Self {
+    pub fn new() -> CustomSystem {
+        return SystemBuilder::new(Self {
             event_loop: WinitEventLoop::new().unwrap(),
-        }
+        });
     }
 }
 
@@ -92,14 +92,14 @@ impl System for WindowController {
                                 if winit_window.id() == window_id {
                                     world.send_event(Box::new(basic::events::TryRemoveComponent {
                                         entity: *entity,
-                                        component_id: Window::component_id()
+                                        component_id: Window::component_id(),
                                     }));
 
                                     if entities.len() == 1 {
                                         event_loop.exit();
                                     }
                                 }
-                            },
+                            }
                             _ => {}
                         }
                     }

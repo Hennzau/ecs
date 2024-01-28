@@ -7,7 +7,9 @@
 /// notably Skypjack in his blog: https://skypjack.github.io/ for EnTT.
 /// It involves smart swapping strategies to avoid fragmenting the main array.
 
-use ahash::AHashMap;
+use ahash::{
+    AHashMap, AHashSet,
+};
 
 use crate::core::{
     entity::Entity,
@@ -202,6 +204,17 @@ impl Entities {
         };
     }
 
+    pub fn try_add_groups(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
+        for group in groups {
+            let result = self.try_add_group(group.clone(), entities);
+            if result.is_err() {
+                return result;
+            }
+        }
+
+        return Ok(());
+    }
+
     /// This method accepts a set of entities to be removed to a specific group. For each entity provided, it performs
     /// the following action: if the entity exists in the nested groups, it will relocate it at the end of each nested group
     /// to finally remove it from the packed array
@@ -258,5 +271,16 @@ impl Entities {
             },
             None => Err(entities_errors::GroupMappingError { group: group }.into())
         };
+    }
+
+    pub fn try_remove_groups(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
+        for group in groups {
+            let result = self.try_remove_group(group.clone(), entities);
+            if result.is_err() {
+                return result;
+            }
+        }
+
+        return Ok(());
     }
 }

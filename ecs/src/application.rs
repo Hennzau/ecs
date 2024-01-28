@@ -176,13 +176,13 @@ impl Application {
                 if let Some(previous_components) = self.components_tracker.get_mut(entity) {
                     let groups = self.mapping.get_next_membership(&previous_components, &AHashSet::from([id]));
 
+                    let result = self.entities.try_add_groups(&groups, &[entity.clone()]);
+
+                    if let Err(e) = result {
+                        log::warn!("Error while adding entity to groups {:?} : {:?}", groups, e);
+                    }
+
                     for group in groups {
-                        let result = self.entities.try_add_group(group, &[entity.clone()]);
-
-                        if let Err(e) = result {
-                            log::warn!("Error while adding entity to group: {:?}", e);
-                        }
-
                         if let Some(systems) = self.join_systems.get_mut(&group) {
                             for system in systems {
                                 let mut world = World::new(&mut self.components);
@@ -229,13 +229,13 @@ impl Application {
 
                     let groups = self.mapping.get_next_membership(&previous_components, &AHashSet::from([id]));
 
+                    let result = self.entities.try_remove_groups(&groups, &[entity.clone()]);
+
+                    if let Err(e) = result {
+                        log::warn!("Error while removing entity from groups {:?} : {:?}", groups, e);
+                    }
+
                     for group in groups {
-                        let result = self.entities.try_remove_group(group, &[entity.clone()]);
-
-                        if let Err(e) = result {
-                            log::warn!("Error while removing entity from group: {:?}", e);
-                        }
-
                         if let Some(systems) = self.quit_systems.get_mut(&group) {
                             for system in systems {
                                 let mut world = World::new(&mut self.components);

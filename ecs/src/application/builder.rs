@@ -28,7 +28,7 @@ pub struct ApplicationBuilder {
     seen: AHashSet<Group>,
 }
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Eq, Hash, PartialEq)]
 pub enum SystemType {
     JOIN,
     QUIT,
