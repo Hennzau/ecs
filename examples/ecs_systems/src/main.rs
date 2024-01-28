@@ -57,7 +57,7 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_tick_system(SystemBuilder::new(basic::systems::CloseApplication::new()));
+    builder.add_tick_system(basic::systems::CloseApplication::new());
     builder.add_tick_system(SystemBuilder::new(systems::Movement {}));
 
     let mut app = builder.build();

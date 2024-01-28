@@ -3,9 +3,9 @@ pub mod events {
         event::{
             Event,
             EventID,
-            AnyEvent
+            AnyEvent,
         },
-        component::ComponentID
+        component::ComponentID,
     };
 
     use ahash::RandomState;
@@ -24,7 +24,7 @@ pub mod components {
     use crate::core::component::{
         Component,
         ComponentID,
-        AnyComponent
+        AnyComponent,
     };
 
     use ahash::RandomState;
@@ -43,12 +43,17 @@ pub mod components {
         pub fn new(text: String) -> Self {
             return Self {
                 text
-            }
+            };
         }
     }
 }
 
 pub mod systems {
+    use std::{
+        rc::Rc,
+        cell::RefCell,
+    };
+
     use ahash::AHashSet;
 
     use crate::{
@@ -56,17 +61,20 @@ pub mod systems {
             events,
             components::{
                 SendCloseEventAfterTime
-            }
+            },
         },
         core::{
             component::{
                 ComponentID,
-                AnyComponent
+                AnyComponent,
             },
             entity::Entity,
             world::World,
-            system::System
-        }
+            system::{
+                System,
+                SystemBuilder,
+            },
+        },
     };
 
     pub struct CloseApplication {
@@ -74,10 +82,10 @@ pub mod systems {
     }
 
     impl CloseApplication {
-        pub fn new() -> Self {
-            return Self {
+        pub fn new() -> Rc::<RefCell<Self>> {
+            return SystemBuilder::new(Self {
                 time: 0.0
-            }
+            });
         }
     }
 
