@@ -22,6 +22,8 @@ pub trait AnyComponent {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
     fn as_any(&self) -> &dyn Any;
+
+    fn into_any (self: Box<Self>) -> Box<dyn Any>;
 }
 
 /// Converts a list of ComponentIDs into the Group format by hashing the list of IDs.

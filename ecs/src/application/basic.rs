@@ -5,7 +5,10 @@ pub mod events {
             EventID,
             AnyEvent,
         },
-        component::ComponentID,
+        component::{
+            ComponentID,
+            AnyComponent,
+        },
     };
 
     use ahash::RandomState;
@@ -17,6 +20,12 @@ pub mod events {
     pub struct TryRemoveComponent {
         pub entity: u64,
         pub component_id: ComponentID,
+    }
+
+    #[derive(Event)]
+    pub struct TryAddComponent {
+        pub entity: u64,
+        pub component: Box<dyn AnyComponent>,
     }
 }
 

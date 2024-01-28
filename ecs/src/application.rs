@@ -105,9 +105,16 @@ impl Application {
 
                 if let Some(event) = event.as_any().downcast_ref::<basic::events::TryRemoveComponent>() {
                     let _ = self.try_remove_any_component(&event.entity, event.component_id);
-                }
+                } else if let Some(_) = event.as_any().downcast_ref::<basic::events::TryAddComponent>() {
+                    let event = event.into_any().downcast::<basic::events::TryAddComponent>().unwrap();
 
-                self.launch_event_systems(event);
+                    let id = event.component.id();
+                    let entity = event.entity.clone();
+
+                    let _ = self.try_add_any_component(&entity, id, event.component);
+                } else {
+                    self.launch_event_systems(event);
+                }
             }
 
             self.launch_tick_systems(delta_time);
@@ -247,12 +254,17 @@ impl Application {
         };
     }
 
-    pub fn try_remove_get_any_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<dyn AnyComponent>> {
-        return self.try_remove_any_component(entity, T::component_id()).ok();
-    }
-
     pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Result<(), ()> {
         return self.try_remove_any_component(entity, T::component_id()).map(|_| ());
+    }
+
+    pub fn try_remove_get_any_component (&mut self, entity: &Entity, id: ComponentID) -> Option<Box<dyn AnyComponent>> {
+        return self.try_remove_any_component(entity, id).ok();
+    }
+
+    pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<T>> {
+        return self.try_remove_any_component(entity, T::component_id()).ok().and_then(
+            |component| component.into_any().downcast::<T> ().ok());
     }
 
     pub fn try_get_any_component(&self, entity: &Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
