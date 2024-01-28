@@ -205,14 +205,16 @@ impl Entities {
     }
 
     pub fn try_add_groups(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
+        let mut result = Ok(());
+
         for group in groups {
-            let result = self.try_add_group(group.clone(), entities);
-            if result.is_err() {
-                return result;
+            let res = self.try_add_group(group.clone(), entities);
+            if res.is_err() {
+                result = res;
             }
         }
 
-        return Ok(());
+        return result;
     }
 
     /// This method accepts a set of entities to be removed to a specific group. For each entity provided, it performs
@@ -274,13 +276,15 @@ impl Entities {
     }
 
     pub fn try_remove_groups(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
+        let mut result = Ok(());
+
         for group in groups {
-            let result = self.try_remove_group(group.clone(), entities);
-            if result.is_err() {
-                return result;
+            let res = self.try_remove_group(group.clone(), entities);
+            if res.is_err() {
+                result = res;
             }
         }
 
-        return Ok(());
+        return result;
     }
 }

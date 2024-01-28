@@ -12,13 +12,13 @@ use hnz::ecs::prelude::*;
 pub mod components {
     use hnz::ecs::prelude::*;
 
-    #[derive(Component)]
+    #[derive(Clone, Component)]
     pub struct A {}
 
-    #[derive(Component)]
+    #[derive(Clone, Component)]
     pub struct B {}
 
-    #[derive(Component)]
+    #[derive(Clone, Component)]
     pub struct C {}
 }
 
@@ -102,30 +102,37 @@ fn main() {
 
     let mut app = builder.build();
 
-    let mut entities = Vec::new();
+    let mut entities_2 = Vec::new();
+    let mut entities_3 = Vec::new();
+    let mut entities_4 = Vec::new();
+    let mut entities_8 = Vec::new();
 
     for i in 0..25 {
         let entity = app.spawn();
 
         if i % 2 == 0 {
-            let _ = app.try_add_component(&entity, components::A {});
+            entities_2.push(entity);
         }
 
         if i % 3 == 0 {
-            let _ = app.try_add_component(&entity, components::B {});
+            entities_3.push(entity);
         }
 
         if i % 4 == 0 {
-            let _ = app.try_add_component(&entity, components::C {});
+            entities_4.push(entity);
         }
 
         if i % 8 == 0 {
-            let _ = app.try_remove_component::<components::A>(&entity);
-            let _ = app.try_remove_component::<components::C>(&entity);
+            entities_8.push(entity);
         }
-
-        entities.push(entity);
     }
+
+    let _ = app.try_multiple_add_component(&entities_2, components::A {});
+    let _ = app.try_multiple_add_component(&entities_3, components::B {});
+    let _ = app.try_multiple_add_component(&entities_4, components::C {});
+
+    let _ = app.try_multiple_remove_component::<components::A>(&entities_8);
+    let _ = app.try_multiple_remove_component::<components::C>(&entities_8);
 
     println!("A: {}", components::A::component_id());
     println!("B: {}", components::B::component_id());

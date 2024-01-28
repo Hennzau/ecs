@@ -207,6 +207,19 @@ impl Application {
         return self.try_add_any_component(entity, T::component_id(), Box::from(value));
     }
 
+    pub fn try_multiple_add_component<T: Clone + AnyComponent + 'static>(&mut self, entities: &[Entity], value: T) -> Result<(), ()> {
+        let mut result = Ok(());
+
+        for entity in entities {
+            let res = self.try_add_component::<T>(entity, value.clone());
+            if res.is_err() {
+                result = res;
+            }
+        }
+
+        return result;
+    }
+
     pub fn try_add_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Option<&T> {
         return match self.try_add_component::<T>(entity, value) {
             Ok(()) => self.try_get_component::<T>(entity),
@@ -258,13 +271,26 @@ impl Application {
         return self.try_remove_any_component(entity, T::component_id()).map(|_| ());
     }
 
-    pub fn try_remove_get_any_component (&mut self, entity: &Entity, id: ComponentID) -> Option<Box<dyn AnyComponent>> {
+    pub fn try_multiple_remove_component<T: AnyComponent + 'static>(&mut self, entities: &[Entity]) -> Result<(), ()> {
+        let mut result = Ok(());
+
+        for entity in entities {
+            let res = self.try_remove_component::<T>(entity);
+            if res.is_err() {
+                result = res;
+            }
+        }
+
+        return result;
+    }
+
+    pub fn try_remove_get_any_component(&mut self, entity: &Entity, id: ComponentID) -> Option<Box<dyn AnyComponent>> {
         return self.try_remove_any_component(entity, id).ok();
     }
 
     pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<T>> {
         return self.try_remove_any_component(entity, T::component_id()).ok().and_then(
-            |component| component.into_any().downcast::<T> ().ok());
+            |component| component.into_any().downcast::<T>().ok());
     }
 
     pub fn try_get_any_component(&self, entity: &Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
