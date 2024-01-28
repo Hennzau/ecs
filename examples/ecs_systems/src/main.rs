@@ -28,6 +28,12 @@ pub mod systems {
 
     pub struct Movement {}
 
+    impl Movement {
+        pub fn new() -> CustomSystem {
+            return SystemBuilder::new(Self {});
+        }
+    }
+
     impl System for Movement {
         fn components(&self) -> AHashSet<ComponentID> {
             return vec![
@@ -57,8 +63,10 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_tick_system(basic::systems::CloseApplication::new());
-    builder.add_tick_system(SystemBuilder::new(systems::Movement {}));
+    builder.add_systems(vec! [
+        basic::systems::CloseApplication::new(),
+        systems::Movement::new()
+    ], vec![SystemType::TICK].into_iter().collect());
 
     let mut app = builder.build();
 

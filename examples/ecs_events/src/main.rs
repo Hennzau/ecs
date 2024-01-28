@@ -40,10 +40,10 @@ pub mod systems {
     }
 
     impl Movement {
-        pub fn new() -> Self {
-            return Self {
+        pub fn new() -> CustomSystem {
+            return SystemBuilder::new(Self {
                 time: 0.0
-            };
+            });
         }
     }
 
@@ -91,10 +91,13 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_tick_system(basic::systems::CloseApplication::new());
-    builder.add_tick_system(SystemBuilder::new(systems::Movement::new()));
 
-    builder.add_event_system(events::PrintPosition::event_id(), SystemBuilder::new(systems::Movement::new()));
+    builder.add_system(basic::systems::CloseApplication::new(), vec![SystemType::TICK].into_iter().collect());
+
+    builder.add_system(systems::Movement::new(), vec![
+        SystemType::TICK,
+        SystemType::EVENT(events::PrintPosition::event_id())
+    ].into_iter().collect());
 
     let mut app = builder.build();
 

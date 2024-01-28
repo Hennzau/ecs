@@ -88,13 +88,17 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let mut builder = ApplicationBuilder::new();
-    builder.add_join_system(SystemBuilder::new(systems::A {}));
-    builder.add_join_system(SystemBuilder::new(systems::B {}));
-    builder.add_join_system(SystemBuilder::new(systems::C {}));
-    builder.add_join_system(SystemBuilder::new(systems::AB {}));
-    builder.add_join_system(SystemBuilder::new(systems::AC {}));
-    builder.add_join_system(SystemBuilder::new(systems::BC {}));
-    builder.add_join_system(SystemBuilder::new(systems::ABC {}));
+    builder.add_systems(vec![
+        SystemBuilder::new(systems::A {}),
+        SystemBuilder::new(systems::B {}),
+        SystemBuilder::new(systems::C {}),
+        SystemBuilder::new(systems::AB {}),
+        SystemBuilder::new(systems::AC {}),
+        SystemBuilder::new(systems::BC {}),
+        SystemBuilder::new(systems::ABC {}),
+    ], vec![
+        SystemType::JOIN
+    ].into_iter().collect());
 
     let mut app = builder.build();
 

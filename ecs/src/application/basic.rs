@@ -58,11 +58,6 @@ pub mod components {
 }
 
 pub mod systems {
-    use std::{
-        rc::Rc,
-        cell::RefCell,
-    };
-
     use ahash::AHashSet;
 
     use crate::{
@@ -82,6 +77,7 @@ pub mod systems {
             system::{
                 System,
                 SystemBuilder,
+                CustomSystem
             },
         },
     };
@@ -91,7 +87,7 @@ pub mod systems {
     }
 
     impl CloseApplication {
-        pub fn new() -> Rc::<RefCell<Self>> {
+        pub fn new() -> CustomSystem {
             return SystemBuilder::new(Self {
                 time: 0.0
             });
