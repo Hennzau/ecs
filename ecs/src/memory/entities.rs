@@ -141,7 +141,7 @@ impl Entities {
     // This function performs a smart relocation of entities within the array of a group. It moves all 'entities' in the new
     // by swaping the slices of the array. It also updates the indices of the entities in the 'indices' map.
 
-    fn relocate_slice(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
+    fn relocate_slice_ahead(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
         if new_first >= old_first {
             return;
         }
@@ -169,7 +169,7 @@ impl Entities {
                     previous_entities.swap_with_slice(entities);
                 }
             }
-        } else if new_first < old_first {
+        } else {
             let gap = count - (old_first - new_first);
 
             let previous_entities = left.get_mut(new_first..old_first);
@@ -195,10 +195,64 @@ impl Entities {
         }
     }
 
-    // This functions search for all entities in 'waiting' that are located between start_search and end_search.
-    // It swaps them next to end_search - 1 - merge_count in order to move them in 'entities_to_add' slice next.
+    // This function performs a smart relocation of entities within the array of a group. It moves all 'entities' in the new
+    // by swaping the slices of the array. It also updates the indices of the entities in the 'indices' map.
 
-    fn swap_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
+    fn relocate_slice_behind(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
+        if new_first <= old_first {
+            return;
+        }
+
+        // separate the array
+        let (left, right) = array.split_at_mut(old_first + 1);
+
+        if new_first - count >= old_first {
+            let entities = left.get_mut((old_first + 1 - count)..(old_first + 1));
+            let previous_entities = right.get_mut((new_first - old_first - count)..(new_first - old_first));
+
+            if let Some(previous_entities) = previous_entities {
+                if let Some(entities) = entities {
+                    // First we update new indices
+
+                    for (i, entity) in previous_entities.iter().enumerate() {
+                        indices.insert(entity.clone(), old_first + 1 + i - count);
+                    }
+
+                    for (i, entity) in entities.iter().enumerate() {
+                        indices.insert(entity.clone(), new_first + 1 + i - count);
+                    }
+
+                    // We swap the slices of the array
+                    previous_entities.swap_with_slice(entities);
+                }
+            }
+        } else {
+            let entities = left.get_mut((old_first - count + 1)..((old_first - count + 1) + (new_first - old_first)));
+            let previous_entities = right.get_mut(0..(new_first - old_first));
+
+            if let Some(previous_entities) = previous_entities {
+                if let Some(entities) = entities {
+                    // First we update new indices
+
+                    for (i, entity) in previous_entities.iter().enumerate() {
+                        indices.insert(entity.clone(), old_first - count + 1 + i);
+                    }
+
+                    for (i, entity) in entities.iter().enumerate() {
+                        indices.insert(entity.clone(), old_first + 1 + i);
+                    }
+
+                    // We swap the slices of the array
+                    previous_entities.swap_with_slice(entities);
+                }
+            }
+        }
+    }
+
+    // This functions search for all entities in 'waiting' that are located between start_search and end_search.
+    // It swaps them next to end_search in order to move them in 'entities_to_add' slice next.
+
+    fn swap_ahead_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
         let mut merged = Vec::<Entity>::new();
 
         for entity in waiting.iter().cloned() {
@@ -214,6 +268,37 @@ impl Entities {
                         indices.insert(entity, end_search - 1 - count);
 
                         array.swap(entity_index, end_search - 1 - count);
+                    }
+                }
+            }
+        }
+
+        for entity in &merged {
+            waiting.retain(|e| e.clone() != entity.clone());
+        }
+
+        return merged;
+    }
+
+    // This functions search for all entities in 'waiting' that are located between start_search and end_search.
+    // It swaps them next to start_search in order to move them in 'entities_to_add' slice next.
+
+    fn swap_behind_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
+        let mut merged = Vec::<Entity>::new();
+
+        for entity in waiting.iter().cloned() {
+            if let Some(entity_index) = indices.get(&entity).cloned() {
+                if entity_index >= start_search && entity_index < end_search {
+                    let count = merged.len();
+
+                    // We swap the entity to end_search - 1 - merge_count
+                    if let Some(previous_entity) = array.get(start_search + count).cloned() {
+                        merged.push(entity);
+
+                        indices.insert(previous_entity, entity_index);
+                        indices.insert(entity, start_search + count);
+
+                        array.swap(entity_index, start_search + count);
                     }
                 }
             }
@@ -280,14 +365,14 @@ impl Entities {
                                     // This way, 'entities_to_add' slice will be bigger and bigger at each iteration, gathering
                                     // all entities that must be moved in the right group.
 
-                                    let mut merged = Self::swap_and_retrieve_waiting_entities(indices, array, &mut waiting_entities, nested.clone(), current_index);
+                                    let mut merged = Self::swap_ahead_and_retrieve_waiting_entities(indices, array, &mut waiting_entities, nested.clone(), current_index);
 
                                     current_index -= merged.len();
                                     entities_to_add.append(&mut merged);
 
                                     // This performs a smart relocation of all entities within the array of a group.
 
-                                    Self::relocate_slice(indices, array, current_index, nested.clone(), entities_to_add.len());
+                                    Self::relocate_slice_ahead(indices, array, current_index, nested.clone(), entities_to_add.len());
 
                                     current_index = nested.clone();
                                     *nested += entities_to_add.len();
@@ -377,7 +462,7 @@ impl Entities {
         let mut result = Ok(());
 
         for group in groups {
-            let res = self.try_add_group_to_entities(group.clone(), entities);
+            let res = self.try_add_group_to_entity(group.clone(), &entity);
             if res.is_err() {
                 result = res;
             }
@@ -465,7 +550,7 @@ impl Entities {
         let mut result = Ok(());
 
         for group in groups {
-            let res = self.try_remove_group_to_entity(group.clone(), entities);
+            let res = self.try_remove_group_to_entity(group.clone(), entity);
             if res.is_err() {
                 result = res;
             }
