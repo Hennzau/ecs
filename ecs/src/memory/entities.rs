@@ -28,6 +28,14 @@ pub struct Entities {
     /// These groups are generated based on a specific mapping. Each Vec<usize> represents a global group,
     /// which is a composition of ordered nested groups. Within these nested groups, the 'usize' value denotes
     /// the count of entities belonging to that particular nested group.
+    ///
+    /// Each Vec<usize> of this array can be seen as a vector of 'cursors' for various nested groups :
+    ///
+    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    /// | 2 | 4 | 1 | 7 | 8 | 9 | 3 | 2 | 9 | 11| 4 | 5 | 6 | 9 |
+    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    /// | - | - | - |ABC| - | - | - | - | AB| - | - | - | - | - | A |
+    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
     groups: Vec<Vec<usize>>,
 
     /// This 'indices' array provides a way to track entities of a group inside de 'packed/dense' array

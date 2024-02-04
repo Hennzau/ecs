@@ -56,10 +56,10 @@ impl Components {
 
     /// Returns `true` if the given entity has the given component. It first checks if the pool exists and then checks
     /// if the pool contains the entity.
-    pub fn contains(&self, entity: &Entity, id: ComponentID) -> bool {
+    pub fn contains(&self, entity: Entity, id: ComponentID) -> bool {
         return match self.map.get(&id) {
             Some(index) => match self.indices.get(index.clone()) {
-                Some(indices) => indices.contains_key(entity),
+                Some(indices) => indices.contains_key(&entity),
                 None => false
             },
             None => false
@@ -67,7 +67,9 @@ impl Components {
     }
 
     /// Adds a component to the given entity. If the entity already has the component, it returns an error.
-    pub fn try_add_any_component(&mut self, entity: &Entity, id: ComponentID, value: Box<dyn AnyComponent>) -> Result<(), ()> {
+    pub fn try_add_any_component(&mut self, entity: Entity, value: Box<dyn AnyComponent>) -> Result<(), ()> {
+        let id = value.id();
+
         if self.contains(entity, id) {
             return Err(());
         }
@@ -75,7 +77,7 @@ impl Components {
         if let Some(index) = self.map.get(&id).cloned() {
             if let (Some(components), Some(indices)) = (self.components.get_mut(index), self.indices.get_mut(index)) {
                 let in_index = components.len();
-                indices.insert(entity.clone(), in_index);
+                indices.insert(entity, in_index);
                 components.push(value);
 
                 return Ok(());
@@ -83,7 +85,7 @@ impl Components {
         } else {
             let index = self.components.len();
             self.components.push(vec![value]);
-            self.indices.push(AHashMap::from([(entity.clone(), 0)]));
+            self.indices.push(AHashMap::from([(entity, 0)]));
             self.map.insert(id, index);
 
             return Ok(());
@@ -93,22 +95,21 @@ impl Components {
     }
 
     /// Adds a component to the given entity. If the entity already has the component, it returns an error.
-    pub fn try_remove_any_component(&mut self, entity: &Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
+    pub fn try_remove_any_component(&mut self, entity: Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
         if !self.contains(entity, id) {
             return Err(());
         }
 
         if let Some(index) = self.map.get(&id).cloned() {
             if let (Some(components), Some(indices)) = (self.components.get_mut(index), self.indices.get_mut(index)) {
-
                 let last_in_index = components.len() - 1;
 
                 let last = indices.iter().find_map(|(key, value)| if value.clone() == last_in_index { Some(key) } else { None });
 
                 if let Some(last_entity) = last.cloned() {
-                    if let Some(in_index) = indices.get(entity).cloned() {
+                    if let Some(in_index) = indices.get(&entity).cloned() {
                         indices.insert(last_entity, in_index);
-                        indices.remove(entity);
+                        indices.remove(&entity);
 
                         return Ok(components.swap_remove(in_index));
                     }
@@ -120,30 +121,30 @@ impl Components {
     }
 
     /// Returns a reference to the component of the given entity if it exists.
-    pub fn try_get_any_component(&self, entity: &Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
+    pub fn try_get_any_component(&self, entity: Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
         return self.map.get(&id).cloned().and_then(
             |index| self.components.get(index).and_then(
                 |components| self.indices.get(index).and_then(
-                    |indices| indices.get(entity).cloned().and_then(
+                    |indices| indices.get(&entity).cloned().and_then(
                         |in_index| components.get(in_index)))));
     }
 
     /// Returns a mutable reference to the component of the given entity if it exists.
-    pub fn try_get_any_mut_component(&mut self, entity: &Entity, id: ComponentID) -> Option<&mut Box<dyn AnyComponent>> {
+    pub fn try_get_any_mut_component(&mut self, entity: Entity, id: ComponentID) -> Option<&mut Box<dyn AnyComponent>> {
         return self.map.get(&id).cloned().and_then(
             |index| self.components.get_mut(index).and_then(
                 |components| self.indices.get(index).and_then(
-                    |indices| indices.get(entity).cloned().and_then(
+                    |indices| indices.get(&entity).cloned().and_then(
                         |in_index| components.get_mut(in_index)))));
     }
 
     /// Returns a reference to the component of the given entity if it exists.
-    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
+    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: Entity) -> Option<&T> {
         return Self::convert_ok(self.try_get_any_component(entity, T::component_id()));
     }
 
     /// Returns a mutable reference to the component of the given entity if it exists.
-    pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
+    pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Option<&mut T> {
         return Self::convert_mut_ok(self.try_get_any_mut_component(entity, T::component_id()));
     }
 }

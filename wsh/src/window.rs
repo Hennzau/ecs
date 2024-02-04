@@ -53,7 +53,7 @@ impl System for WindowController {
     /// This function is called when an entity joins this system.
 
     fn on_join(&mut self, entities: &[Entity], world: &mut World) {
-        for entity in entities {
+        for &entity in entities {
             let position = world.try_get_component::<Position2Di32>(entity).unwrap().clone();
             let scale = world.try_get_component::<Scale2Du32>(entity).unwrap().clone();
             let title = match world.try_get_component::<basic::components::Label>(entity) {
@@ -82,7 +82,7 @@ impl System for WindowController {
             if let Event::WindowEvent { event, window_id } = event {
                 // Retrieve all entities and get the window component
 
-                for entity in entities {
+                for &entity in entities {
                     let window = world.try_get_mut_component::<Window>(entity).unwrap();
                     if let Some(winit_window) = &mut window.winit_window {
 
@@ -91,7 +91,7 @@ impl System for WindowController {
                             WindowEvent::CloseRequested => {
                                 if winit_window.id() == window_id {
                                     world.send_event(Box::new(basic::events::TryRemoveComponent {
-                                        entity: *entity,
+                                        entity: entity,
                                         component_id: Window::component_id(),
                                     }));
 

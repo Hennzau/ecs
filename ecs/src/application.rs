@@ -80,6 +80,7 @@ impl Application {
         };
     }
 
+    /// Spawns a new entity and returns its id.
     pub fn spawn(&mut self) -> Entity {
         let result = self.next_entity;
 
@@ -87,6 +88,20 @@ impl Application {
         self.next_entity += 1;
 
         return result;
+    }
+
+    /// Spawns a batch of entities and returns their ids. Warning : a batch of entities
+    /// should be used when you need to spawn a lot of similar entities. Which means that they must have
+    /// the same components. If you need to spawn entities with different components, you should use
+    /// the `spawn` method.
+    pub fn spawn_batch(&mut self, amount: usize) -> (Entity, usize) {
+        let leader = self.spawn();
+
+        for _ in 1..amount {
+            self.spawn();
+        }
+
+        return (leader, amount);
     }
 
     pub fn run(&mut self, max_rate: f32) {
@@ -105,14 +120,13 @@ impl Application {
                 }
 
                 if let Some(event) = event.as_any().downcast_ref::<basic::events::TryRemoveComponent>() {
-                    let _ = self.try_remove_any_component(&event.entity, event.component_id);
+                    let _ = self.try_remove_any_component(event.entity, event.component_id);
                 } else if let Some(_) = event.as_any().downcast_ref::<basic::events::TryAddComponent>() {
                     let event = event.into_any().downcast::<basic::events::TryAddComponent>().unwrap();
 
-                    let id = event.component.id();
                     let entity = event.entity.clone();
 
-                    let _ = self.try_add_any_component(&entity, id, event.component);
+                    let _ = self.try_add_any_component(entity, event.component);
                 } else {
                     self.launch_event_systems(event);
                 }
@@ -168,20 +182,54 @@ impl Application {
     }
 }
 
-/// Components management functions
+// Bundle
 
 impl Application {
     pub fn bundle(&mut self, entity: Entity) -> bundle::Bundle {
         return bundle::Bundle::new(entity, self);
     }
 
-    pub fn try_add_any_component(&mut self, entity: &Entity, id: ComponentID, value: Box<dyn AnyComponent>) -> Result<(), ()> {
-        return match self.components.try_add_any_component(entity, id, value) {
+    pub fn batch_bundle(&mut self, batch: (Entity, usize)) -> bundle::BatchBundle {
+        return bundle::BatchBundle::new(batch, self);
+    }
+
+    pub fn multiple_bundle(&mut self, entities: Vec<Entity>) -> bundle::MultipleBundle {
+        return bundle::MultipleBundle::new(entities, self);
+    }
+}
+
+// Get components
+
+impl Application {
+    pub fn try_get_any_component(&self, entity: Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
+        return self.components.try_get_any_component(entity, id);
+    }
+
+    pub fn try_get_any_mut_component(&mut self, entity: Entity, id: ComponentID) -> Option<&mut Box<dyn AnyComponent>> {
+        return self.components.try_get_any_mut_component(entity, id);
+    }
+
+    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: Entity) -> Option<&T> {
+        return self.components.try_get_component::<T>(entity);
+    }
+
+    pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Option<&mut T> {
+        return self.components.try_get_mut_component::<T>(entity);
+    }
+}
+
+// Add components
+
+impl Application {
+    pub fn try_add_any_component(&mut self, entity: Entity, value: Box<dyn AnyComponent>) -> Result<(), ()> {
+        let id = value.id();
+
+        return match self.components.try_add_any_component(entity, value) {
             Ok(()) => {
-                if let Some(previous_components) = self.components_tracker.get_mut(entity) {
+                if let Some(previous_components) = self.components_tracker.get_mut(&entity) {
                     let groups = self.mapping.get_next_membership(&previous_components, &AHashSet::from([id]));
 
-                    let result = self.entities.try_add_groups_to_entities(&groups, &[entity.clone()]);
+                    let result = self.entities.try_add_groups_to_entity(&groups, entity);
 
                     if let Err(e) = result {
                         log::warn!("Error while adding entity to groups {:?} : {:?}", groups, e);
@@ -192,7 +240,7 @@ impl Application {
                             for system in systems {
                                 let mut world = World::new(&mut self.components);
 
-                                system.borrow_mut().on_join(&[entity.clone()], &mut world);
+                                system.borrow_mut().on_join(&[entity], &mut world);
 
                                 self.events.append(&mut world.events);
                             }
@@ -208,46 +256,103 @@ impl Application {
         };
     }
 
-    pub fn try_add_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Result<(), ()> {
-        return self.try_add_any_component(entity, T::component_id(), Box::from(value));
-    }
+    pub fn try_add_any_component_batch(&mut self, batch: (Entity, usize), values: Vec<Box<dyn AnyComponent>>) -> Result<(), ()> {
+        let (leader, amount) = batch;
+        if let Some(previous_components) = self.components_tracker.get(&leader) {
+            if let Some(first) = values.first() {
+                let groups = self.mapping.get_next_membership(&previous_components, &AHashSet::from([first.id()]));
 
-    pub fn try_multiple_add_component<T: Clone + AnyComponent + 'static>(&mut self, entities: &[Entity], value: T) -> Result<(), ()> {
-        let mut result = Ok(());
+                let entities = (leader..(leader + amount as u64)).collect::<Vec<Entity>>();
+                let result = self.entities.try_add_groups_to_entities(&groups, &entities);
 
-        for entity in entities {
-            let res = self.try_add_component::<T>(entity, value.clone());
-            if res.is_err() {
-                result = res;
+                for &entity in &entities {
+                    if let Some(previous_components) = self.components_tracker.get_mut(&entity) {
+                        previous_components.insert(first.id());
+                    }
+                }
+
+                if let Err(e) = result {
+                    log::warn!("Error while adding entity to groups {:?} : {:?}", groups, e);
+                }
+
+                let mut result = Ok(());
+
+                for (&entity, value) in entities.iter().zip(values) {
+                    if let Err(()) = self.components.try_add_any_component(entity, value) {
+                        result = Err(());
+                    }
+                }
+
+                for group in groups {
+                    if let Some(systems) = self.join_systems.get_mut(&group) {
+                        for system in systems {
+                            let mut world = World::new(&mut self.components);
+
+                            system.borrow_mut().on_join(&entities, &mut world);
+
+                            self.events.append(&mut world.events);
+                        }
+                    }
+                }
+
+                return result;
             }
         }
 
-        return result;
+        Err(())
     }
 
-    pub fn try_add_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Option<&T> {
+    pub fn try_add_component<T: AnyComponent + 'static>(&mut self, entity: Entity, value: T) -> Result<(), ()> {
+        return self.try_add_any_component(entity, Box::from(value));
+    }
+
+    pub fn try_add_component_batch<T: AnyComponent + 'static>(&mut self, batch: (Entity, usize), values: Vec<T>) -> Result<(), ()> {
+        let mut box_values = Vec::<Box<dyn AnyComponent>>::new();
+
+        for value in values {
+            box_values.push(Box::from(value));
+        }
+
+        return self.try_add_any_component_batch((batch.0, batch.1), box_values);
+    }
+
+    pub fn try_add_component_batch_clone<T: Clone + AnyComponent + 'static>(&mut self, batch: (Entity, usize), value: T) -> Result<(), ()> {
+        let mut values = Vec::<Box<dyn AnyComponent>>::new();
+
+        for _ in 0..batch.1 {
+            values.push(Box::from(value.clone()));
+        }
+
+        return self.try_add_any_component_batch((batch.0, batch.1), values);
+    }
+
+    pub fn try_add_get_component<T: AnyComponent + 'static>(&mut self, entity: Entity, value: T) -> Option<&T> {
         return match self.try_add_component::<T>(entity, value) {
             Ok(()) => self.try_get_component::<T>(entity),
             Err(()) => None
         };
     }
 
-    pub fn try_add_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: &Entity, value: T) -> Option<&mut T> {
+    pub fn try_add_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: Entity, value: T) -> Option<&mut T> {
         return match self.try_add_component::<T>(entity, value) {
             Ok(()) => self.try_get_mut_component::<T>(entity),
             Err(()) => None
         };
     }
+}
 
-    pub fn try_remove_any_component(&mut self, entity: &Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
+// Remove components
+
+impl Application {
+    pub fn try_remove_any_component(&mut self, entity: Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
         return match self.components.try_remove_any_component(entity, id) {
             Ok(any_component) => {
-                if let Some(previous_components) = self.components_tracker.get_mut(entity) {
+                if let Some(previous_components) = self.components_tracker.get_mut(&entity) {
                     previous_components.remove(&id);
 
                     let groups = self.mapping.get_next_membership(&previous_components, &AHashSet::from([id]));
 
-                    let result = self.entities.try_remove_groups_to_entities(&groups, &[entity.clone()]);
+                    let result = self.entities.try_remove_groups_to_entity(&groups, entity);
 
                     if let Err(e) = result {
                         log::warn!("Error while removing entity from groups {:?} : {:?}", groups, e);
@@ -258,7 +363,7 @@ impl Application {
                             for system in systems {
                                 let mut world = World::new(&mut self.components);
 
-                                system.borrow_mut().on_quit(&[entity.clone()], &mut world);
+                                system.borrow_mut().on_quit(&[entity], &mut world);
 
                                 self.events.append(&mut world.events);
                             }
@@ -272,45 +377,70 @@ impl Application {
         };
     }
 
-    pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Result<(), ()> {
-        return self.try_remove_any_component(entity, T::component_id()).map(|_| ());
-    }
+    pub fn try_remove_any_component_batch(&mut self, batch: (Entity, usize), id: ComponentID) -> Result<Vec<Box<dyn AnyComponent>>, ()> {
+        let (leader, amount) = batch;
+        let entities = (leader..(leader + amount as u64)).collect::<Vec<Entity>>();
 
-    pub fn try_multiple_remove_component<T: AnyComponent + 'static>(&mut self, entities: &[Entity]) -> Result<(), ()> {
-        let mut result = Ok(());
-
-        for entity in entities {
-            let res = self.try_remove_component::<T>(entity);
-            if res.is_err() {
-                result = res;
+        for &entity in &entities {
+            if let Some(previous_components) = self.components_tracker.get_mut(&entity) {
+                previous_components.remove(&id);
             }
         }
 
-        return result;
+        if let Some(previous_components) = self.components_tracker.get_mut(&leader) {
+            let groups = self.mapping.get_next_membership(&previous_components, &AHashSet::from([id]));
+
+            let result = self.entities.try_remove_groups_to_entities(&groups, &entities);
+
+            if let Err(e) = result {
+                log::warn!("Error while adding entity to groups {:?} : {:?}", groups, e);
+            }
+
+            let mut result = Ok(Vec::new());
+
+            let mut components = Vec::<Box<dyn AnyComponent>>::new();
+            for &entity in &entities {
+                let res = self.components.try_remove_any_component(entity, id);
+
+                if let Ok(component) = res {
+                    components.push(component);
+                } else {
+                    result = Err(());
+                }
+            }
+
+            for group in groups {
+                if let Some(systems) = self.quit_systems.get_mut(&group) {
+                    for system in systems {
+                        let mut world = World::new(&mut self.components);
+
+                        system.borrow_mut().on_join(&entities, &mut world);
+
+                        self.events.append(&mut world.events);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        Err(())
     }
 
-    pub fn try_remove_get_any_component(&mut self, entity: &Entity, id: ComponentID) -> Option<Box<dyn AnyComponent>> {
+    pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Result<(), ()> {
+        return self.try_remove_any_component(entity, T::component_id()).map(|_| ());
+    }
+
+    pub fn try_remove_component_batch<T: AnyComponent + 'static>(&mut self, batch: (Entity, usize)) -> Result<(), ()> {
+        return self.try_remove_any_component_batch(batch, T::component_id()).map(|_| ());
+    }
+
+    pub fn try_remove_get_any_component(&mut self, entity: Entity, id: ComponentID) -> Option<Box<dyn AnyComponent>> {
         return self.try_remove_any_component(entity, id).ok();
     }
 
-    pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<Box<T>> {
+    pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Option<Box<T>> {
         return self.try_remove_any_component(entity, T::component_id()).ok().and_then(
             |component| component.into_any().downcast::<T>().ok());
-    }
-
-    pub fn try_get_any_component(&self, entity: &Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
-        return self.components.try_get_any_component(entity, id);
-    }
-
-    pub fn try_get_any_mut_component(&mut self, entity: &Entity, id: ComponentID) -> Option<&mut Box<dyn AnyComponent>> {
-        return self.components.try_get_any_mut_component(entity, id);
-    }
-
-    pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: &Entity) -> Option<&T> {
-        return self.components.try_get_component::<T>(entity);
-    }
-
-    pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: &Entity) -> Option<&mut T> {
-        return self.components.try_get_mut_component::<T>(entity);
     }
 }

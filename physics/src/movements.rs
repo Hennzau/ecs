@@ -10,7 +10,7 @@ impl System for Movementf32 {
     }
 
     fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
-        for entity in entities {
+        for &entity in entities {
             let position = world.try_get_component::<maths::Position2Df32>(entity).unwrap();
             let velocity = world.try_get_component::<maths::Velocity2Df32>(entity).unwrap();
 
@@ -33,7 +33,7 @@ impl System for Movementi32 {
     }
 
     fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
-        for entity in entities {
+        for &entity in entities {
             let position = world.try_get_component::<maths::Position2Di32>(entity).unwrap();
             let velocity = world.try_get_component::<maths::Velocity2Di32>(entity).unwrap();
 

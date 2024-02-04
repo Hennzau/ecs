@@ -43,7 +43,7 @@ pub mod systems {
         }
 
         fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
-            for entity in entities {
+            for &entity in entities {
                 let position = world.try_get_component::<Position2Df32>(entity).unwrap();
                 let velocity = world.try_get_component::<Velocity2Df32>(entity).unwrap();
 
@@ -71,7 +71,7 @@ fn main() {
     let mut app = builder.build();
 
     let moderator = app.spawn();
-    let _ = app.try_add_component(&moderator, basic::components::SendCloseEventAfterTime {
+    let _ = app.try_add_component(moderator, basic::components::SendCloseEventAfterTime {
         time: 4.0,
     });
 
@@ -86,7 +86,7 @@ fn main() {
 
     app.run(60f32);
 
-    let position = app.try_get_component::<components::Position2Df32>(&entity).unwrap();
+    let position = app.try_get_component::<components::Position2Df32>(entity).unwrap();
 
     println!("Entity position: {:?}", (position.x, position.y));
 }

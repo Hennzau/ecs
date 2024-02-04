@@ -42,6 +42,11 @@ pub mod prelude {
                 SystemType
             },
             basic,
+            bundle::{
+                Bundle,
+                BatchBundle,
+                MultipleBundle
+            }
         },
     };
 

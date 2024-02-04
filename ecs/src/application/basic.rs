@@ -104,7 +104,7 @@ pub mod systems {
         fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
             self.time += delta_time;
 
-            for entity in entities {
+            for &entity in entities {
                 if let Some(component) = world.try_get_component::<SendCloseEventAfterTime>(entity) {
                     if self.time >= component.time {
                         world.send_event(Box::new(events::CloseApplication {}));
