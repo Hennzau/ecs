@@ -173,7 +173,6 @@ impl Entities {
             let gap = count - (old_first - new_first);
 
             let previous_entities = left.get_mut(new_first..old_first);
-
             let entities = right.get_mut(gap..count); // Be aware, it's not gap..gap+count
 
             if let Some(previous_entities) = previous_entities {
@@ -204,10 +203,10 @@ impl Entities {
         }
 
         // separate the array
-        let (left, right) = array.split_at_mut(old_first + 1);
+        let (left, right) = array.split_at_mut(old_first);
 
         if new_first - count >= old_first {
-            let entities = left.get_mut((old_first + 1 - count)..(old_first + 1));
+            let entities = left.get_mut((old_first - count)..old_first);
             let previous_entities = right.get_mut((new_first - old_first - count)..(new_first - old_first));
 
             if let Some(previous_entities) = previous_entities {
@@ -215,11 +214,11 @@ impl Entities {
                     // First we update new indices
 
                     for (i, entity) in previous_entities.iter().enumerate() {
-                        indices.insert(entity.clone(), old_first + 1 + i - count);
+                        indices.insert(entity.clone(), old_first - count + i);
                     }
 
                     for (i, entity) in entities.iter().enumerate() {
-                        indices.insert(entity.clone(), new_first + 1 + i - count);
+                        indices.insert(entity.clone(), new_first - count + i);
                     }
 
                     // We swap the slices of the array
@@ -227,7 +226,7 @@ impl Entities {
                 }
             }
         } else {
-            let entities = left.get_mut((old_first - count + 1)..((old_first - count + 1) + (new_first - old_first)));
+            let entities = left.get_mut((old_first - count)..(new_first - count));
             let previous_entities = right.get_mut(0..(new_first - old_first));
 
             if let Some(previous_entities) = previous_entities {
@@ -235,11 +234,11 @@ impl Entities {
                     // First we update new indices
 
                     for (i, entity) in previous_entities.iter().enumerate() {
-                        indices.insert(entity.clone(), old_first - count + 1 + i);
+                        indices.insert(entity.clone(), old_first - count + i);
                     }
 
                     for (i, entity) in entities.iter().enumerate() {
-                        indices.insert(entity.clone(), old_first + 1 + i);
+                        indices.insert(entity.clone(), old_first + i);
                     }
 
                     // We swap the slices of the array
@@ -481,8 +480,6 @@ impl Entities {
                 Some(indices) => match self.entities.get_mut(index) {
                     Some(array) => match self.groups.get_mut(index) {
                         Some(groups) => {
-                            let last_in_index = groups.len() - 1;
-
                             // We gather all nested groups located to the left of the target group (including the target group).
                             if let Some(groups_to_cross) = match in_index < groups.len() {
                                 true => {
@@ -492,27 +489,26 @@ impl Entities {
                                 }
                                 false => None
                             } {
-                                // Lastly, we traverse these groups from the l, swapping all entities that currently
-                                // are part of the group to the end.
-                                for (i, nested) in groups_to_cross.iter_mut().enumerate() {
-                                    for entity in entities {
-                                        if let Some(entity_index) = indices.get(entity).cloned() {
-                                            if entity_index < nested.clone() {
-                                                if let Some(previous_entity) = array.get(nested.clone() - 1).cloned() {
-                                                    indices.insert(previous_entity, entity_index);
-                                                    indices.insert(entity.clone(), nested.clone() - 1);
+                                let mut current_index = 0usize;
+                                let mut entities_to_remove = Vec::<Entity>::new();
+                                let mut waiting_entities = Vec::<Entity>::from(entities);
 
-                                                    array.swap(entity_index, nested.clone() - 1);
+                                for nested in groups_to_cross {
+                                    let mut merged = Self::swap_behind_and_retrieve_waiting_entities(indices, array, &mut waiting_entities, current_index, nested.clone());
 
-                                                    if i == last_in_index {
-                                                        array.pop();
-                                                        indices.remove(entity);
-                                                    }
-                                                }
+                                    current_index += merged.len();
+                                    entities_to_remove.append(&mut merged);
 
-                                                *nested -= 1;
-                                            }
-                                        }
+                                    Self::relocate_slice_behind(indices, array, current_index, nested.clone(), entities_to_remove.len());
+
+                                    current_index = nested.clone();
+                                    *nested -= entities_to_remove.len();
+                                }
+
+                                if in_index == groups.len() - 1 {
+                                    for entity in entities_to_remove {
+                                        array.pop();
+                                        indices.remove(&entity);
                                     }
                                 }
                             }
@@ -530,7 +526,56 @@ impl Entities {
     }
 
     pub fn try_remove_group_to_entity(&mut self, group: Group, entity: Entity) -> entities_errors::Result {
-        return self.try_remove_group_to_entities(group, &[entity]);
+        // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
+        return match self.map.get(&group).cloned() {
+            Some((index, in_index)) => match self.indices.get_mut(index) {
+                Some(indices) => match self.entities.get_mut(index) {
+                    Some(array) => match self.groups.get_mut(index) {
+                        Some(groups) => {
+                            let last_in_index = groups.len() - 1;
+
+                            // We gather all nested groups located to the left of the target group (including the target group).
+                            if let Some(groups_to_cross) = match in_index < groups.len() {
+                                true => {
+                                    let (groups, _) = groups.split_at_mut(in_index + 1);
+
+                                    Some(groups)
+                                }
+                                false => None
+                            } {
+                                // Lastly, we traverse these groups from the l, swapping all entities that currently
+                                // are part of the group to the end.
+                                for (i, nested) in groups_to_cross.iter_mut().enumerate() {
+                                    if let Some(entity_index) = indices.get(&entity).cloned() {
+                                        if entity_index < nested.clone() {
+                                            if let Some(previous_entity) = array.get(nested.clone() - 1).cloned() {
+                                                indices.insert(previous_entity, entity_index);
+                                                indices.insert(entity.clone(), nested.clone() - 1);
+
+                                                array.swap(entity_index, nested.clone() - 1);
+
+                                                if i == last_in_index {
+                                                    array.pop();
+                                                    indices.remove(&entity);
+                                                }
+                                            }
+
+                                            *nested -= 1;
+                                        }
+                                    }
+                                }
+                            }
+
+                            Ok(())
+                        }
+                        None => Err(entities_errors::GroupMappingError { group: group }.into())
+                    }
+                    None => Err(entities_errors::EntitiesMappingError { group: group }.into())
+                }
+                None => Err(entities_errors::IndicesMappingError { group: group }.into())
+            },
+            None => Err(entities_errors::GroupMappingError { group: group }.into())
+        };
     }
 
     pub fn try_remove_groups_to_entities(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
