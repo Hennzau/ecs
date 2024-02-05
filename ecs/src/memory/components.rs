@@ -8,9 +8,6 @@ use crate::core::{
     },
 };
 
-/// This module contains the `Components` struct, which is used to store all components in the game.
-/// It aims to be a simple and efficient way to store components : user can add, remove and get components easily
-/// and efficiently.
 pub struct Components {
     /// Each element of the primary vector acts as a pool of components of the same type.
     components: Vec<Vec<Box<dyn AnyComponent>>>,
@@ -32,7 +29,7 @@ impl Components {
     /// # Example
     ///
     /// ```
-    /// let components = Components::new();
+    /// let components = ecs::memory::components::Components::new();
     /// // Use the newly created instance of the `Components` struct.
     /// ```
     ///
@@ -60,7 +57,12 @@ impl Components {
     /// # Example
     ///
     /// ```
-    /// let any_component: Box<dyn AnyComponent> = // ... (obtain or create a boxed trait object)
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let any_component: Box<dyn AnyComponent> = Box::new(SpecificComponent {});
     ///
     /// // Attempt to downcast the boxed trait object to a specific type.
     /// if let Some(component_ref) = convert::<SpecificComponent>(&any_component) {
@@ -90,7 +92,12 @@ impl Components {
     /// # Example
     ///
     /// ```
-    /// let mut any_component: Box<dyn AnyComponent> = // ... (obtain or create a boxed trait object)
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let mut any_component: Box<dyn AnyComponent> = Box::new(SpecificComponent {});
     ///
     /// // Attempt to downcast the boxed trait object to a specific type.
     /// if let Some(component_ref) = convert_mut::<SpecificComponent>(&mut any_component) {
@@ -120,7 +127,13 @@ impl Components {
     /// # Example
     ///
     /// ```
-    /// let option_component: Option<&Box<dyn AnyComponent>> = // ... (obtain or create an option with a boxed trait object)
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let any_component: Box<dyn AnyComponent> = Box::new(SpecificComponent {});
+    /// let option_component: Option<&Box<dyn AnyComponent>> = Some (&any_component);
     ///
     /// // Attempt to downcast the option into a specific type.
     /// if let Some(component_ref) = convert_ok::<SpecificComponent>(option_component) {
@@ -150,7 +163,13 @@ impl Components {
     /// # Example
     ///
     /// ```
-    /// let option_component: Option<&mut Box<dyn AnyComponent>> = // ... (obtain or create an option with a mutable boxed trait object)
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let any_component: Box<dyn AnyComponent> = Box::new(SpecificComponent {});
+    /// let option_component: Option<&Box<dyn AnyComponent>> = Some (&any_component);
     ///
     /// // Attempt to downcast the option into a specific type.
     /// if let Some(component_ref) = convert_mut_ok::<SpecificComponent>(option_component) {
@@ -177,6 +196,21 @@ impl Components {
     /// # Returns
     ///
     /// Returns `true` if the entity has the specified component, and the pool exists. Otherwise, returns `false`.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let entity = 0 as Entity; // Let's imagine that '0' is the id of an existing entity spawned in the application
+    ///
+    /// let components = ecs::memory::components::Components::new();
+    /// let _ = components.try_add_any_component(entity, Box::new(SpecificComponent {}));
+    ///
+    /// assert!(components.contains(entity, SpecificComponent::component_id()));
+    /// ```
     pub fn contains(&self, entity: Entity, id: ComponentID) -> bool {
         return match self.map.get(&id) {
             Some(index) => match self.indices.get(index.clone()) {
@@ -198,6 +232,20 @@ impl Components {
     ///
     /// Returns `Ok(())` if the component is successfully added to the entity.
     /// Returns `Err(())` if the entity already has the component.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let entity = 0 as Entity; // Let's imagine that '0' is the id of an existing entity spawned in the application
+    ///
+    /// let mut components = ecs::memory::components::Components::new();
+    ///
+    /// assert!(components.try_add_any_component(entity, Box::new(SpecificComponent {})).is_ok());
+    /// ```
     pub fn try_add_any_component(&mut self, entity: Entity, value: Box<dyn AnyComponent>) -> Result<(), ()> {
         let id = value.id();
 
@@ -236,6 +284,22 @@ impl Components {
     ///
     /// Returns `Ok(Box<dyn AnyComponent>)` with the removed component if successful.
     /// Returns `Err(())` if the entity does not have the specified component.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let entity = 0 as Entity; // Let's imagine that '0' is the id of an existing entity spawned in the application
+    ///
+    /// let mut components = ecs::memory::components::Components::new();
+    ///
+    /// assert!(components.try_add_any_component(entity, Box::new(SpecificComponent {})).is_ok());
+    /// assert!(components.try_remove_any_component(entity, SpecificComponent::component_id()).is_ok());
+    ///
+    /// ```
     pub fn try_remove_any_component(&mut self, entity: Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
         if !self.contains(entity, id) {
             return Err(());
@@ -272,6 +336,24 @@ impl Components {
     ///
     /// Returns `Some(&Box<dyn AnyComponent>)` with a reference to the component if it exists.
     /// Returns `None` if the entity does not have the specified component.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let entity = 0 as Entity; // Let's imagine that '0' is the id of an existing entity spawned in the application
+    ///
+    /// let mut components = ecs::memory::components::Components::new();
+    ///
+    /// assert!(components.try_add_any_component(entity, Box::new(SpecificComponent {})).is_ok());
+    ///
+    /// if let Some (any_component) = components.try_get_any_component (entity, SpecificComponent::component_id()) {
+    ///     // Now 'any_component' is a '&Box<dyn AnyComponent>>'
+    /// }
+    /// ```
     pub fn try_get_any_component(&self, entity: Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
         return self.map.get(&id).cloned().and_then(
             |index| self.components.get(index).and_then(
@@ -291,6 +373,24 @@ impl Components {
     ///
     /// Returns `Some(&mut Box<dyn AnyComponent>)` with a mutable reference to the component if it exists.
     /// Returns `None` if the entity does not have the specified component.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let entity = 0 as Entity; // Let's imagine that '0' is the id of an existing entity spawned in the application
+    ///
+    /// let mut components = ecs::memory::components::Components::new();
+    ///
+    /// assert!(components.try_add_any_component(entity, Box::new(SpecificComponent {})).is_ok());
+    ///
+    /// if let Some (any_component) = components.try_get_any_mut_component (entity, SpecificComponent::component_id()) {
+    ///     // Now 'any_component' is a '&mut Box<dyn AnyComponent>>'
+    /// }
+    /// ```
     pub fn try_get_any_mut_component(&mut self, entity: Entity, id: ComponentID) -> Option<&mut Box<dyn AnyComponent>> {
         return self.map.get(&id).cloned().and_then(
             |index| self.components.get_mut(index).and_then(
@@ -309,6 +409,24 @@ impl Components {
     ///
     /// Returns `Some(&T)` with a reference to the component of type `T` if it exists.
     /// Returns `None` if the entity does not have the specified component.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let entity = 0 as Entity; // Let's imagine that '0' is the id of an existing entity spawned in the application
+    ///
+    /// let mut components = ecs::memory::components::Components::new();
+    ///
+    /// assert!(components.try_add_any_component(entity, Box::new(SpecificComponent {})).is_ok());
+    ///
+    /// if let Some (any_component) = components.try_get_component::<SpecificComponent> (entity) {
+    ///     // Now 'any_component' is a '&SpecificComponent'
+    /// }
+    /// ```
     pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: Entity) -> Option<&T> {
         return Self::convert_ok(self.try_get_any_component(entity, T::component_id()));
     }
@@ -323,6 +441,24 @@ impl Components {
     ///
     /// Returns `Some(&mut T)` with a mutable reference to the component of type `T` if it exists.
     /// Returns `None` if the entity does not have the specified component.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// struct SpecificComponent {}
+    ///
+    /// let entity = 0 as Entity; // Let's imagine that '0' is the id of an existing entity spawned in the application
+    ///
+    /// let mut components = ecs::memory::components::Components::new();
+    ///
+    /// assert!(components.try_add_any_component(entity, Box::new(SpecificComponent {})).is_ok());
+    ///
+    /// if let Some (any_component) = components.try_get_mut_component::<SpecificComponent> (entity) {
+    ///     // Now 'any_component' is a '&mut SpecificComponent'
+    /// }
+    /// ```
     pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Option<&mut T> {
         return Self::convert_mut_ok(self.try_get_any_mut_component(entity, T::component_id()));
     }

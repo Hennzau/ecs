@@ -20,11 +20,11 @@ use crate::core::{
 /// and that needs to communicate data from its functions.
 pub type CustomSystem = Rc::<RefCell<dyn System>>;
 
-/// This struct lets you build systems without the need to write 'Rc::<RefCell<T>>'
+/// This struct lets you build systems without the need to write `Rc::<RefCell<T>>`
 pub struct SystemBuilder {}
 
 impl SystemBuilder {
-    /// This function provides a way to build a Rc::<RefCell<T>> directly from a T value. It can be used in constructors
+    /// This function provides a way to build a `Rc::<RefCell<T>>` directly from a T value. It can be used in constructors
     /// of your custom systems.
     ///
     /// # Arguments
@@ -33,7 +33,7 @@ impl SystemBuilder {
     ///
     /// # Returns
     ///
-    /// Returns a shared pointer Rc::<RefCell<T>> from the T value
+    /// Returns a shared pointer `Rc::<RefCell<T>>` from the T value
     ///
     /// # Example
     ///
@@ -66,6 +66,11 @@ pub trait System {
     /// # Returns
     ///
     /// Returns a hash set (`AHashSet`) of `ComponentID` instances representing the components that the system wants to use.
+    ///
+    /// # Example
+    ///
+    /// See [`crate::application::basic::systems::CloseApplication::components`]
+    ///
     fn components(&self) -> AHashSet<ComponentID>;
 
     /// Each system belongs to a certain group. Every system that uses the same set of components
@@ -77,14 +82,6 @@ pub trait System {
     fn group(&self) -> Group {
         component::group_id(&self.components())
     }
-
-    /// Handles the system logic when receiving a signal.
-    ///
-    /// # Arguments
-    ///
-    /// * `_entities` - An array slice (`&[Entity]`) representing the entities affected by the signal for this system.
-    /// * `_world` - A mutable reference to the `World` instance, allowing modifications within the system logic.
-    fn on_signal(&mut self, _entities: &[Entity], _world: &mut World) {}
 
     /// Handles the system logic when an event is triggered.
     ///
@@ -110,6 +107,10 @@ pub trait System {
     /// * `_delta_time` - The time elapsed since the last tick, represented as a floating-point value.
     /// * `_entities` - An array slice (`&[Entity]`) representing the entities affected by the tick.
     /// * `_world` - A mutable reference to the `World` instance, allowing modifications within the system logic.
+    ///
+    /// # Example
+    ///
+    /// See [`crate::application::basic::systems::CloseApplication::on_tick`]
     fn on_tick(&mut self, _delta_time: f32, _entities: &[Entity], _world: &mut World) {}
 
     /// Handles the system logic when the application or game is about to quit.

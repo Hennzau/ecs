@@ -1,20 +1,13 @@
 use ahash::{
     AHashMap, AHashSet,
 };
+use ecs_macros::Component;
 
 use crate::core::{
     entity::Entity,
     component::Group,
 };
 
-/// This module manages all entities within an application based on a specific mapping.
-/// A mapping refers to an efficient memory distribution that dictates how entities should be sorted
-/// to facilitate access to entities possessing a known set of components (A, B, C, etc.)
-/// without necessitating iteration or conditional statements.
-///
-/// This approach is founded on the concept of 'nested storages' introduced by other ECS systems,
-/// notably Skypjack in his blog: https://skypjack.github.io/ for EnTT.
-/// It involves smart swapping strategies to avoid fragmenting the main array.
 pub struct Entities {
     /// This is the 'packed/dense' array containing all entities. It comprises multiple contiguous Entity storages,
     /// each associated with a distinct "main group" defined in the mapping. An example of such a storage could be:
@@ -113,7 +106,26 @@ impl Entities {
     ///
     /// ```
     /// // Create a new entities storage with initial groups and mapping.
-    /// use ahash::AHashMap;
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
     ///
     /// let groups = vec![
     ///     vec![0, 0, 0], // for groups ABC - AB - A
@@ -122,15 +134,15 @@ impl Entities {
     /// ];
     ///
     /// let mapping = AHashMap::new ();
-    /// mapping.insert ("ABC", (0, 0)); // "ABC" should be a unique id calculated by 'component::group_id' method
-    /// mapping.insert ("AB",  (0, 1));
-    /// mapping.insert ("A",   (0, 2));
-    /// mapping.insert ("BC",  (1, 0));
-    /// mapping.insert ("B",   (1, 1));
-    /// mapping.insert ("AC",  (2, 0));
-    /// mapping.insert ("C",   (2, 1));
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
     ///
-    /// let entities = Entities::new(groups, mapping);
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
     /// ```
     pub fn new(groups: Vec<Vec<usize>>, map: AHashMap<Group, (usize, usize)>) -> Self {
         let mut entities = Vec::new();
@@ -175,6 +187,44 @@ impl Entities {
     /// # Example
     ///
     /// ```
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0], // for groups ABC - AB - A
+    ///     vec![0, 0], // For BC - B
+    ///     vec![0, 0] // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
     /// // entities are : vec![1, 2, 3, 4, 5];
     /// //groups are :           /\          /\
     /// //                       AB          A
@@ -247,7 +297,7 @@ impl Entities {
     /// # Note
     ///
     /// The function does not return anything but directly modifies the array and updates the indices map.
-    fn relocate_slice_ahead(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
+    pub fn relocate_slice_ahead(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
         if new_first >= old_first {
             return;
         }
@@ -343,7 +393,7 @@ impl Entities {
     /// # Note
     ///
     /// The function does not return anything but directly modifies the array and updates the indices map.
-    fn relocate_slice_behind(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
+    pub fn relocate_slice_behind(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
         if new_first <= old_first {
             return;
         }
@@ -408,7 +458,7 @@ impl Entities {
     /// # Returns
     ///
     /// Returns a vector containing entities that have been swapped next to `end_search`.
-    fn move_ahead_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
+    pub fn move_ahead_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
         let mut merged = Vec::<Entity>::new();
 
         for entity in waiting.iter().cloned() {
@@ -450,7 +500,7 @@ impl Entities {
     /// # Returns
     ///
     /// Returns a vector containing entities that have been swapped next to `start_search`.
-    fn move_behind_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
+    pub fn move_behind_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
         let mut merged = Vec::<Entity>::new();
 
         for entity in waiting.iter().cloned() {
