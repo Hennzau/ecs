@@ -115,7 +115,7 @@ impl Application {
             previous_time = now_time;
 
             while let Some(event) = self.events.pop_front() {
-                if let Some(_) = event.as_any().downcast_ref::<basic::events::CloseApplication>() {
+                if let Some(_) = event.as_any().downcast_ref::<basic::events::ModeratorCloseApplication>() {
                     break 'main;
                 }
 
@@ -130,6 +130,8 @@ impl Application {
                 } else {
                     self.launch_event_systems(event);
                 }
+
+                // TODO: manage other events 'TryBatch, TrySet'
             }
 
             self.launch_tick_systems(delta_time);
@@ -193,8 +195,8 @@ impl Application {
         return bundle::BatchBundle::new(batch, self);
     }
 
-    pub fn multiple_bundle(&mut self, entities: Vec<Entity>) -> bundle::MultipleBundle {
-        return bundle::MultipleBundle::new(entities, self);
+    pub fn multiple_bundle(&mut self, entities: Vec<Entity>) -> bundle::SetBundle {
+        return bundle::SetBundle::new(entities, self);
     }
 }
 

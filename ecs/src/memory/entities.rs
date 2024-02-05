@@ -1,12 +1,3 @@
-/// This module manages all entities within an application based on a specific mapping.
-/// A mapping refers to an efficient memory distribution that dictates how entities should be sorted
-/// to facilitate access to entities possessing a known set of components (A, B, C, etc.)
-/// without necessitating iteration or conditional statements.
-///
-/// This approach is founded on the concept of 'nested storages' introduced by other ECS systems,
-/// notably Skypjack in his blog: https://skypjack.github.io/ for EnTT.
-/// It involves smart swapping strategies to avoid fragmenting the main array.
-
 use ahash::{
     AHashMap, AHashSet,
 };
@@ -16,6 +7,14 @@ use crate::core::{
     component::Group,
 };
 
+/// This module manages all entities within an application based on a specific mapping.
+/// A mapping refers to an efficient memory distribution that dictates how entities should be sorted
+/// to facilitate access to entities possessing a known set of components (A, B, C, etc.)
+/// without necessitating iteration or conditional statements.
+///
+/// This approach is founded on the concept of 'nested storages' introduced by other ECS systems,
+/// notably Skypjack in his blog: https://skypjack.github.io/ for EnTT.
+/// It involves smart swapping strategies to avoid fragmenting the main array.
 pub struct Entities {
     /// This is the 'packed/dense' array containing all entities. It comprises multiple contiguous Entity storages,
     /// each associated with a distinct "main group" defined in the mapping. An example of such a storage could be:
@@ -102,7 +101,37 @@ pub mod entities_errors {
 }
 
 impl Entities {
-    /// Creates a new instance initializing internal data structures based on provided groups and mapping.
+    /// Creates a new instance, initializing internal data structures based on provided groups and mapping.
+    ///
+    /// # Arguments
+    ///
+    /// * `groups` - A vector of vectors representing the initial structure of entities grouped by group identifiers.
+    /// * `map` -   A hash map (`AHashMap`) mapping group identifiers to tuple indices representing the index of corresponding
+    ///             nested groups in 'groups' and the index of the desired nested group
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ahash::AHashMap;
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0], // for groups ABC - AB - A
+    ///     vec![0, 0], // For BC - B
+    ///     vec![0, 0] // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert ("ABC", (0, 0)); // "ABC" should be a unique id calculated by 'component::group_id' method
+    /// mapping.insert ("AB",  (0, 1));
+    /// mapping.insert ("A",   (0, 2));
+    /// mapping.insert ("BC",  (1, 0));
+    /// mapping.insert ("B",   (1, 1));
+    /// mapping.insert ("AC",  (2, 0));
+    /// mapping.insert ("C",   (2, 1));
+    ///
+    /// let entities = Entities::new(groups, mapping);
+    /// ```
     pub fn new(groups: Vec<Vec<usize>>, map: AHashMap<Group, (usize, usize)>) -> Self {
         let mut entities = Vec::new();
         let mut indices = Vec::new();
@@ -120,12 +149,41 @@ impl Entities {
         };
     }
 
+    /// Returns a reference to the 'packed/dense' entities array.
+    ///
+    /// # Returns
+    ///
+    /// Returns a reference to the 'packed/dense' entities array, where each element of the array represents
+    /// an array of entities belonging to a specific group.
+    /// The returned reference has a lifetime tied to the lifetime of the entity manager.
     pub fn entities(&self) -> &[Vec<Entity>] {
         return &self.entities;
     }
 
-    /// When the group is accurately mapped, this function will return a slice of the 'packed/dense' entities array
+    /// If the group is accurately mapped, this function returns a slice of the 'packed/dense' entities array
     /// containing all entities belonging to this particular group.
+    ///
+    /// # Arguments
+    ///
+    /// * `group` - The group for which the entities' slice is requested.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(slice)` if the group is accurately mapped, providing a slice of entities in the group.
+    /// Returns `None` if the group is not accurately mapped.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // entities are : vec![1, 2, 3, 4, 5];
+    /// //groups are :           /\          /\
+    /// //                       AB          A
+    /// let entity_slice = try_view("AB" as Group);
+    /// assert!(entity_slice == Some (&[1]));
+    ///
+    /// let entity_slice = try_view("A" as Group);
+    /// assert!(entity_slice == Some (&[1, 2, 3, 4, 5]));
+    /// ```
     pub fn try_view(&self, group: Group) -> Option<&[Entity]> {
         return self.map.get(&group).cloned().map_or_else(|| {
             log::warn!("You tried to view entities from group {}, but this group wasn't mapped", group);
@@ -146,9 +204,49 @@ impl Entities {
         }, |entities| entities.get(0..count)))));
     }
 
-    // This function performs a smart relocation of entities within the array of a group. It moves all 'entities' in the new
-    // by swaping the slices of the array. It also updates the indices of the entities in the 'indices' map.
-
+    /// This function performs a smart relocation of entities within a group's array.
+    /// It moves all 'entities' to the new position by swapping slices of the array.
+    /// It also updates the indices of the entities in the 'indices' map.
+    ///
+    /// This function is useful for moving entities towards **the front of the array** using only a single swap_with_slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `indices` - A mutable reference to an `AHashMap<Entity, usize>` containing the current indices of entities.
+    /// * `array` - A mutable reference to a vector (`Vec<Entity>`) containing the entities to be relocated.
+    /// * `old_first` - The starting index of the slice to be moved in the original array.
+    ///                 In this specific method, 'old_first' points directly to the first entity on the left of the slice
+    ///
+    /// * `new_first` - The destination index where the slice should be moved in the array.
+    /// * `count` - The number of elements to move from the starting index.
+    ///
+    /// # Panics
+    ///
+    /// The function panics if the provided indices exceed the bounds of the array.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ahash::AHashMap;
+    ///
+    /// let mut indices_map = AHashMap::new();
+    /// let mut entities_array = vec![1, 2, 3, 4, 5];
+    ///
+    /// indices_map.insert (1, 0); // Entity, index in 'entities_array'
+    /// indices_map.insert (2, 1);
+    /// indices_map.insert (3, 2);
+    /// indices_map.insert (4, 3);
+    /// indices_map.insert (5, 4);
+    ///
+    /// // Relocates entities from index 1 to index 3 to index 0.
+    /// relocate_slice_ahead(&mut indices_map, &mut entities_array, 1, 0, 3);
+    ///
+    /// assert! (entities_array == vec![2, 3, 4, 1, 5]);
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// The function does not return anything but directly modifies the array and updates the indices map.
     fn relocate_slice_ahead(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
         if new_first >= old_first {
             return;
@@ -202,9 +300,49 @@ impl Entities {
         }
     }
 
-    // This function performs a smart relocation of entities within the array of a group. It moves all 'entities' in the new
-    // by swaping the slices of the array. It also updates the indices of the entities in the 'indices' map.
-
+    /// This function performs a smart relocation of entities within a group's array.
+    /// It moves all 'entities' to the new position by swapping slices of the array.
+    /// It also updates the indices of the entities in the 'indices' map.
+    ///
+    /// This function is useful for moving entities towards **the back of the array** using only a single swap_with_slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `indices` - A mutable reference to an `AHashMap<Entity, usize>` containing the current indices of entities.
+    /// * `array` - A mutable reference to a vector (`Vec<Entity>`) containing the entities to be relocated.
+    /// * `old_first` - The starting index of the slice to be moved in the original array.
+    ///                 In this specific method, 'old_first' points directly to the next entity on the right of the slice
+    ///
+    /// * `new_first` - The destination index where the slice should be moved in the array.
+    /// * `count` - The number of elements to move from the starting index.
+    ///
+    /// # Panics
+    ///
+    /// The function panics if the provided indices exceed the bounds of the array.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ahash::AHashMap;
+    ///
+    /// let mut indices_map = AHashMap::new();
+    /// let mut entities_array = vec![1, 2, 3, 4, 5];
+    ///
+    /// indices_map.insert (1, 0); // Entity, index in 'entities_array'
+    /// indices_map.insert (2, 1);
+    /// indices_map.insert (3, 2);
+    /// indices_map.insert (4, 3);
+    /// indices_map.insert (5, 4);
+    ///
+    /// // Relocates entities from index 3 to index 0 to index 4.
+    /// relocate_slice_ahead(&mut indices_map, &mut entities_array, 3, 4, 3);
+    ///
+    /// assert! (entities_array == vec![4, 1, 2, 3, 5]);
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// The function does not return anything but directly modifies the array and updates the indices map.
     fn relocate_slice_behind(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
         if new_first <= old_first {
             return;
@@ -256,10 +394,21 @@ impl Entities {
         }
     }
 
-    // This functions search for all entities in 'waiting' that are located between start_search and end_search.
-    // It swaps them next to end_search in order to move them in 'entities_to_add' slice next.
-
-    fn swap_ahead_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
+    /// Searches for entities in the 'waiting' vector located between `start_search` and `end_search` indices that
+    /// need to be moved to the next group. It swaps them next to `end_search` to prepare for moving them to the 'entities_to_add' slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `indices` - A mutable reference to an `AHashMap<Entity, usize>` containing the indices of entities in the 'array'.
+    /// * `array` - A mutable reference to a vector (`Vec<Entity>`) representing the main entities array.
+    /// * `waiting` - A mutable reference to a vector (`Vec<Entity>`) containing entities waiting to be moved.
+    /// * `start_search` - The starting index for searching entities in the 'waiting' vector.
+    /// * `end_search` - The ending index for searching entities in the 'waiting' vector.
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector containing entities that have been swapped next to `end_search`.
+    fn move_ahead_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
         let mut merged = Vec::<Entity>::new();
 
         for entity in waiting.iter().cloned() {
@@ -287,10 +436,21 @@ impl Entities {
         return merged;
     }
 
-    // This functions search for all entities in 'waiting' that are located between start_search and end_search.
-    // It swaps them next to start_search in order to move them in 'entities_to_add' slice next.
-
-    fn swap_behind_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
+    /// Searches for entities in the 'waiting' vector located between `start_search` and `end_search` indices that
+    /// need to be moved to the next group. It swaps them next to `start_search` to prepare for moving them to the 'entities_to_add' slice.
+    ///
+    /// # Arguments
+    ///
+    /// * `indices` - A mutable reference to an `AHashMap<Entity, usize>` containing the indices of entities in the 'array'.
+    /// * `array` - A mutable reference to a vector (`Vec<Entity>`) representing the main entities array.
+    /// * `waiting` - A mutable reference to a vector (`Vec<Entity>`) containing entities waiting to be moved.
+    /// * `start_search` - The starting index for searching entities in the 'waiting' vector.
+    /// * `end_search` - The ending index for searching entities in the 'waiting' vector.
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector containing entities that have been swapped next to `start_search`.
+    fn move_behind_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
         let mut merged = Vec::<Entity>::new();
 
         for entity in waiting.iter().cloned() {
@@ -318,12 +478,19 @@ impl Entities {
         return merged;
     }
 
-    /// This method accepts a set of entities to be added to a specific group. For each entity provided, it performs
-    /// the following action: if the entity already exists in the global group, it will relocate the entity within
-    /// the nested groups; otherwise, it will add the entity to the global group and then perform the relocation.
+    /// Attempts to add a set of entities to a specific group. For each entity provided, it performs
+    /// the following action: if the entity already exists in the global group, it relocates the entity within
+    /// the nested groups; otherwise, it adds the entity to the global group and then performs the relocation.
+    /// **In fact this function performs smarts moving of all entities, it does not perform any operation on each entity**
+    /// # Arguments
     ///
-    /// This function returns Ok(()) if all 'entities' are successfully associated with the specified 'group'.
-    /// If any issues occur or inconsistencies are detected, it will return an Error indicating the problematic group.
+    /// * `group` - The target group to which the entities should be associated.
+    /// * `entities` - A slice of entities to be added to the specified group.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if all entities are successfully associated with the specified group.
+    /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
     pub fn try_add_group_to_entities(&mut self, group: Group, entities: &[Entity]) -> entities_errors::Result {
         // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
@@ -372,7 +539,7 @@ impl Entities {
                                     // This way, 'entities_to_add' slice will be bigger and bigger at each iteration, gathering
                                     // all entities that must be moved in the right group.
 
-                                    let mut merged = Self::swap_ahead_and_retrieve_waiting_entities(indices, array, &mut waiting_entities, nested.clone(), current_index);
+                                    let mut merged = Self::move_ahead_and_retrieve_waiting_entities(indices, array, &mut waiting_entities, nested.clone(), current_index);
 
                                     current_index -= merged.len();
                                     entities_to_add.append(&mut merged);
@@ -397,6 +564,18 @@ impl Entities {
         };
     }
 
+    /// Attempts to add an entity to a specific group. If the entity already exists in the global group, it relocates
+    /// the entity within the nested groups; otherwise, it adds the entity to the global group and then performs the relocation.
+    ///
+    /// # Arguments
+    ///
+    /// * `group` - The target group to which the entity should be associated.
+    /// * `entity` - A reference to the entity to be added to the specified group.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the entity is successfully associated with the specified group.
+    /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
     pub fn try_add_group_to_entity(&mut self, group: Group, entity: &Entity) -> entities_errors::Result {
         // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
@@ -452,6 +631,19 @@ impl Entities {
         };
     }
 
+    /// Attempts to add a set of entities to a set of groups. For each entity provided, it performs
+    /// the following action: if the entity already exists in the global group, it relocates the entity within
+    /// the nested groups; otherwise, it adds the entity to the global group and then performs the relocation.
+    /// **In fact this function performs smarts moving of all entities, it does not perform any operation on each entity**
+    /// # Arguments
+    ///
+    /// * `groups` - The groups to which the entities should be associated.
+    /// * `entities` - A slice of entities to be added to the specified group.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if all entities are successfully associated with all group in groups.
+    /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
     pub fn try_add_groups_to_entities(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
         let mut result = Ok(());
 
@@ -465,6 +657,18 @@ impl Entities {
         return result;
     }
 
+    /// Attempts to add an entity to a set of groups. If the entity already exists in the global group, it relocates
+    /// the entity within the nested groups; otherwise, it adds the entity to the global group and then performs the relocation.
+    ///
+    /// # Arguments
+    ///
+    /// * `group` - The groups to which the entity should be associated.
+    /// * `entity` - A reference to the entity to be added to the specified group.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the entity is successfully associated with all group in groups.
+    /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
     pub fn try_add_groups_to_entity(&mut self, groups: &AHashSet<Group>, entity: Entity) -> entities_errors::Result {
         let mut result = Ok(());
 
@@ -478,9 +682,19 @@ impl Entities {
         return result;
     }
 
-    /// This method accepts a set of entities to be removed to a specific group. For each entity provided, it performs
-    /// the following action: if the entity exists in the nested groups, it will relocate it at the end of each nested group
-    /// to finally remove it from the packed array
+    /// Attempts to remove a set of entities from a specific group. For each entity provided, it performs
+    /// the following action: if the entity exists in the nested groups, it relocates it to the end of each nested group
+    /// and finally removes it from the packed array.
+    ///
+    /// # Arguments
+    ///
+    /// * `group` - The target group from which the entities should be removed.
+    /// * `entities` - A slice of entities to be removed from the specified group.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if all entities are successfully removed from the specified group.
+    /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
     pub fn try_remove_group_to_entities(&mut self, group: Group, entities: &[Entity]) -> entities_errors::Result {
         // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
@@ -502,7 +716,7 @@ impl Entities {
                                 let mut waiting_entities = Vec::<Entity>::from(entities);
 
                                 for nested in groups_to_cross {
-                                    let mut merged = Self::swap_behind_and_retrieve_waiting_entities(indices, array, &mut waiting_entities, current_index, nested.clone());
+                                    let mut merged = Self::move_behind_and_retrieve_waiting_entities(indices, array, &mut waiting_entities, current_index, nested.clone());
 
                                     current_index += merged.len();
                                     entities_to_remove.append(&mut merged);
@@ -533,6 +747,18 @@ impl Entities {
         };
     }
 
+    /// Attempts to remove an entity from a specific group. If the entity exists in the nested groups, it relocates it
+    /// to the end of each nested group and finally removes it from the packed array.
+    ///
+    /// # Arguments
+    ///
+    /// * `group` - The target group from which the entity should be removed.
+    /// * `entity` - The entity to be removed from the specified group.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the entity is successfully removed from the specified group.
+    /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
     pub fn try_remove_group_to_entity(&mut self, group: Group, entity: Entity) -> entities_errors::Result {
         // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
@@ -586,6 +812,19 @@ impl Entities {
         };
     }
 
+    /// Attempts to remove a set of entities from multiple groups. For each entity provided, it performs
+    /// the following action: if the entity exists in any of the specified groups, it relocates it to the end
+    /// of each nested group and finally removes it from the packed array.
+    ///
+    /// # Arguments
+    ///
+    /// * `groups` - A hash set (`AHashSet`) of target groups from which the entities should be removed.
+    /// * `entities` - A slice of entities to be removed from the specified groups.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if all entities are successfully removed from the specified groups.
+    /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
     pub fn try_remove_groups_to_entities(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
         let mut result = Ok(());
 
@@ -599,6 +838,18 @@ impl Entities {
         return result;
     }
 
+    /// Attempts to remove an entity from multiple groups. If the entity exists in any of the specified groups,
+    /// it relocates it to the end of each nested group and finally removes it from the packed array.
+    ///
+    /// # Arguments
+    ///
+    /// * `groups` - A hash set (`AHashSet`) of target groups from which the entity should be removed.
+    /// * `entity` - The entity to be removed from the specified groups.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the entity is successfully removed from the specified groups.
+    /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
     pub fn try_remove_groups_to_entity(&mut self, groups: &AHashSet<Group>, entity: Entity) -> entities_errors::Result {
         let mut result = Ok(());
 

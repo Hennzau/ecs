@@ -30,24 +30,62 @@ impl SystemBuilder {
 
 /// General trait that must be implemented for structs that must be understand as System
 pub trait System {
-    /// This function provides a way to know which components each system wants to use
-
+    /// This function provides a way to know which components each system wants to use.
+    ///
+    /// # Returns
+    ///
+    /// Returns a hash set (`AHashSet`) of `ComponentID` instances representing the components that the system wants to use.
     fn components(&self) -> AHashSet<ComponentID>;
 
-    /// Each system belongs to a certain group. Every system that use the same set of components
-    /// are in the same group
-
+    /// Each system belongs to a certain group. Every system that uses the same set of components
+    /// are in the same group.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Group` instance representing the group to which the system belongs based on its set of components.
     fn group(&self) -> Group {
         component::group_id(&self.components())
     }
 
+    /// Handles the system logic when receiving a signal.
+    ///
+    /// # Arguments
+    ///
+    /// * `_entities` - An array slice (`&[Entity]`) representing the entities affected by the signal for this system.
+    /// * `_world` - A mutable reference to the `World` instance, allowing modifications within the system logic.
     fn on_signal(&mut self, _entities: &[Entity], _world: &mut World) {}
 
+    /// Handles the system logic when an event is triggered.
+    ///
+    /// # Arguments
+    ///
+    /// * `_entities` - An array slice (`&[Entity]`) representing the entities affected by the event for this system.
+    /// * `_world` - A mutable reference to the `World` instance, allowing modifications within the system logic.
+    /// * `_event` - A boxed trait object (`Box<dyn AnyEvent>`) representing the triggered event.
     fn on_event(&mut self, _entities: &[Entity], _world: &mut World, _event: &Box<dyn AnyEvent>) {}
 
+    /// Handles the system logic when entities are joined to the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `_entities` - An array slice (`&[Entity]`) representing the entities that have been joined to the system.
+    /// * `_world` - A mutable reference to the `World` instance, allowing modifications within the system logic.
     fn on_join(&mut self, _entities: &[Entity], _world: &mut World) {}
 
+    /// Handles the system logic on each tick of the game loop.
+    ///
+    /// # Arguments
+    ///
+    /// * `_delta_time` - The time elapsed since the last tick, represented as a floating-point value.
+    /// * `_entities` - An array slice (`&[Entity]`) representing the entities affected by the tick.
+    /// * `_world` - A mutable reference to the `World` instance, allowing modifications within the system logic.
     fn on_tick(&mut self, _delta_time: f32, _entities: &[Entity], _world: &mut World) {}
 
+    /// Handles the system logic when the application or game is about to quit.
+    ///
+    /// # Arguments
+    ///
+    /// * `_entities` - An array slice (`&[Entity]`) representing the entities affected by the quit event.
+    /// * `_world` - A mutable reference to the `World` instance, allowing modifications within the system logic.
     fn on_quit(&mut self, _entities: &[Entity], _world: &mut World) {}
 }

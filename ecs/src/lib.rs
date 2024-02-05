@@ -45,7 +45,7 @@ pub mod prelude {
             bundle::{
                 Bundle,
                 BatchBundle,
-                MultipleBundle
+                SetBundle
             }
         },
     };

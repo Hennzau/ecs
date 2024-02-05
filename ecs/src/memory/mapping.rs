@@ -1,21 +1,7 @@
-/// This module manages memory mapping to generate the appropriate Entities storage
-/// based on the user's chosen set of components.
-///
-/// This mapping principle was conceived by Genouville Grégoire, Bianchi Bérénice, and Le Van Enzo.
-/// It revolves around creating a specialized bipartite graph and employing the Hopcroft-Karp algorithm
-/// to create an optimized mapping for PackedEntities.
-///
-/// The idea is to construct a bipartite graph where each group appears both in the left and right groups.
-/// Then, we connect each group on the left to every group on the right that contains it.
-/// Finally, we use the Hopcroft-Karp algorithm to determine the minimal bipartite matching.
-///
-/// The Hopcroft-Karp algorithm, initially recursive, aims to be transformed into an iterative approach.
-/// Referencing: https://www.baeldung.com/cs/convert-recursion-to-iteration
-
 use std::collections::VecDeque;
 use ahash::{
     AHashMap,
-    AHashSet
+    AHashSet,
 };
 
 use crate::{
@@ -34,7 +20,19 @@ type IGroup = i128; // We use i128 because we need to be able to represent -u64
 
 const INFTY: u64 = u64::MAX;
 
-/// This struct represents the memory mapper
+/// This module manages memory mapping to generate the appropriate Entities storage
+/// based on the user's chosen set of components.
+///
+/// This mapping principle was conceived by Genouville Grégoire, Bianchi Bérénice, and Le Van Enzo.
+/// It revolves around creating a specialized bipartite graph and employing the Hopcroft-Karp algorithm
+/// to create an optimized mapping for PackedEntities.
+///
+/// The idea is to construct a bipartite graph where each group appears both in the left and right groups.
+/// Then, we connect each group on the left to every group on the right that contains it.
+/// Finally, we use the Hopcroft-Karp algorithm to determine the minimal bipartite matching.
+///
+/// The Hopcroft-Karp algorithm, initially recursive, aims to be transformed into an iterative approach.
+/// Referencing: https://www.baeldung.com/cs/convert-recursion-to-iteration
 pub struct MemoryMapping {
     /// Represents the set of components you intend to use for your systems.
     pub descriptor: MemoryMappingDescriptor,
@@ -53,6 +51,15 @@ pub struct MemoryMapping {
 }
 
 impl MemoryMapping {
+    /// Creates a new instance of the `MemoryMapping` struct based on the provided `MemoryMappingDescriptor`.
+    ///
+    /// # Arguments
+    ///
+    /// * `descriptor` - A `MemoryMappingDescriptor` specifying the properties of the memory mapping.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new instance of the `MemoryMapping` struct initialized with the provided descriptor.
     pub fn new(descriptor: MemoryMappingDescriptor) -> MemoryMapping {
         fn second_strictly_contains_first(first: &AHashSet<ComponentID>, second: &AHashSet<ComponentID>) -> bool {
             return first != second && first.is_subset(second);
@@ -128,6 +135,10 @@ impl MemoryMapping {
     /// Generates the corresponding Entities storage based on the previously generated graph.
     ///
     /// This function first constructs the mapping from the graph and then passes it to the Entities constructor.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new instance of the `Entities` struct representing the optimized storage based on the graph mapping.
     pub fn create_storage(&self) -> Entities {
         let mut groups = Vec::new();
         let mut mapping = AHashMap::new();
@@ -184,6 +195,15 @@ impl MemoryMapping {
     }
 
     /// Calculates the group to which an entity belongs when adding additional components to it, given its previous set of components.
+    ///
+    /// # Arguments
+    ///
+    /// * `previous_components` - A hash set (`AHashSet`) representing the entity's previous set of components.
+    /// * `components_to_add` - A hash set (`AHashSet`) representing the additional components to be added.
+    ///
+    /// # Returns
+    ///
+    /// Returns a hash set (`AHashSet`) of `Group` instances representing the calculated group memberships after adding the components.
     pub fn get_next_membership(&self, previous_components: &AHashSet<ComponentID>, components_to_add: &AHashSet<ComponentID>) -> AHashSet<Group> {
         let mut previous_groups = AHashSet::<Group>::new();
         let mut new_groups = AHashSet::<Group>::new();
@@ -204,7 +224,17 @@ impl MemoryMapping {
     /// This section of the code implements the Hopcroft-Karp algorithm. It should be used after creating the MemoryMapping.
     ///
     /// This function calculates new distances in the graph and updates them.
-
+    ///
+    /// # Arguments
+    ///
+    /// * `layer_one` - A hash map (`AHashMap`) representing the nodes in the first layer of the bipartite graph.
+    /// * `layer_two` - A hash map (`AHashMap`) representing the nodes in the second layer of the bipartite graph.
+    /// * `layer_one_neighbors` - A hash map (`AHashMap`) representing the neighbors of nodes in the first layer.
+    /// * `distances` - A mutable hash map (`AHashMap`) storing distances to be updated during the calculation.
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if any distances are updated, indicating that the algorithm should continue. Returns `false` if no updates are made, indicating completion.
     fn compute_distances(layer_one: &AHashMap<Group, Option<IGroup>>, layer_two: &AHashMap<IGroup, Option<Group>>, layer_one_neighbors: &AHashMap<Group, Vec<IGroup>>, distances: &mut AHashMap<Option<IGroup>, u64>) -> bool {
         let mut queue = VecDeque::<Option<Group>>::new();
 
@@ -260,8 +290,19 @@ impl MemoryMapping {
         };
     }
 
-    /// This function calculates the right pair according to the current calculated distances
-
+    /// This function calculates the right pair according to the current calculated distances.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertex` - An option representing a vertex from the first layer.
+    /// * `layer_one` - A mutable hash map (`AHashMap`) representing the nodes in the first layer of the bipartite graph.
+    /// * `layer_two` - A mutable hash map (`AHashMap`) representing the nodes in the second layer of the bipartite graph.
+    /// * `layer_one_neighbors` - A hash map (`AHashMap`) representing the neighbors of nodes in the first layer.
+    /// * `distances` - A mutable hash map (`AHashMap`) storing distances used in the calculation.
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if a matching is found and updated, indicating that the algorithm should continue. Returns `false` if no matching is found, indicating completion.
     fn compute_matching(vertex: Option<Group>, layer_one: &mut AHashMap<Group, Option<IGroup>>, layer_two: &mut AHashMap<IGroup, Option<Group>>, layer_one_neighbors: &AHashMap<Group, Vec<IGroup>>, distances: &mut AHashMap<Option<IGroup>, u64>) -> bool {
         if let Some(vertex) = vertex {
             if let Some(neighbors) = layer_one_neighbors.get(&vertex).cloned() {

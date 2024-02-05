@@ -1,7 +1,3 @@
-/// This module contains the `Components` struct, which is used to store all components in the game.
-/// It aims to be a simple and efficient way to store components : user can add, remove and get components easily
-/// and efficiently.
-
 use ahash::AHashMap;
 
 use crate::core::{
@@ -12,7 +8,9 @@ use crate::core::{
     },
 };
 
-/// This struct is used to store all components in the game.
+/// This module contains the `Components` struct, which is used to store all components in the game.
+/// It aims to be a simple and efficient way to store components : user can add, remove and get components easily
+/// and efficiently.
 pub struct Components {
     /// Each element of the primary vector acts as a pool of components of the same type.
     components: Vec<Vec<Box<dyn AnyComponent>>>,
@@ -26,6 +24,20 @@ pub struct Components {
 
 impl Components {
     /// Creates a new instance of the `Components` struct.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new instance of the `Components` struct with initialized internal data structures.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let components = Components::new();
+    /// // Use the newly created instance of the `Components` struct.
+    /// ```
+    ///
+    /// The method initializes the internal state of the `Components` struct.
+    /// It returns a new instance ready to be used for managing components in hnz ECS.
     pub fn new() -> Self {
         return Self {
             components: Vec::new(),
@@ -35,27 +47,136 @@ impl Components {
     }
 
     /// Downcasts a `Box<dyn AnyComponent>` into a `&T` if possible.
+    ///
+    /// # Arguments
+    ///
+    /// * `component` - A reference to a boxed trait object implementing `AnyComponent`.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(&T)` if the downcast is successful, providing a reference to the downcasted type `T`.
+    /// Returns `None` if the downcast is not possible.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let any_component: Box<dyn AnyComponent> = // ... (obtain or create a boxed trait object)
+    ///
+    /// // Attempt to downcast the boxed trait object to a specific type.
+    /// if let Some(component_ref) = convert::<SpecificComponent>(&any_component) {
+    ///     // Successfully downcasted to the desired type. Use the reference.
+    /// } else {
+    ///     // Unable to downcast to the desired type.
+    /// }
+    /// ```
+    ///
+    /// The method attempts to downcast a boxed trait object into a reference of the specified type `T`.
+    /// It returns `Some(&T)` if the downcast is successful and `None` otherwise.
     pub fn convert<T: AnyComponent + 'static>(component: &Box<dyn AnyComponent>) -> Option<&T> {
         return component.as_any().downcast_ref::<T>();
     }
 
     /// Downcasts a `Box<dyn AnyComponent>` into a `&mut T` if possible.
+    ///
+    /// # Arguments
+    ///
+    /// * `component` - A mutable reference to a boxed trait object implementing `AnyComponent`.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(&mut T)` if the downcast is successful, providing a mutable reference to the downcasted type `T`.
+    /// Returns `None` if the downcast is not possible.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut any_component: Box<dyn AnyComponent> = // ... (obtain or create a boxed trait object)
+    ///
+    /// // Attempt to downcast the boxed trait object to a specific type.
+    /// if let Some(component_ref) = convert_mut::<SpecificComponent>(&mut any_component) {
+    ///     // Successfully downcasted to the desired type. Use the mutable reference.
+    /// } else {
+    ///     // Unable to downcast to the desired type.
+    /// }
+    /// ```
+    ///
+    /// The method attempts to downcast a boxed trait object into a mutable reference of the specified type `T`.
+    /// It returns `Some(&mut T)` if the downcast is successful and `None` otherwise.
     pub fn convert_mut<T: AnyComponent + 'static>(component: &mut Box<dyn AnyComponent>) -> Option<&mut T> {
         return component.as_any_mut().downcast_mut::<T>();
     }
 
-    /// Downcasts a `Option<&Box<dyn AnyComponent>>` into a `Option<&T>` if possible.
+    /// Downcasts an `Option<&Box<dyn AnyComponent>>` into an `Option<&T>` if possible.
+    ///
+    /// # Arguments
+    ///
+    /// * `component` - An option containing a reference to a boxed trait object implementing `AnyComponent`.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(&T)` if the downcast is successful, providing a reference to the downcasted type `T`.
+    /// Returns `None` if the downcast is not possible or if the input option is `None`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let option_component: Option<&Box<dyn AnyComponent>> = // ... (obtain or create an option with a boxed trait object)
+    ///
+    /// // Attempt to downcast the option into a specific type.
+    /// if let Some(component_ref) = convert_ok::<SpecificComponent>(option_component) {
+    ///     // Successfully downcasted to the desired type. Use the reference.
+    /// } else {
+    ///     // Unable to downcast to the desired type or the option is None.
+    /// }
+    /// ```
+    ///
+    /// The method attempts to downcast an option containing a boxed trait object into a reference of the specified type `T`.
+    /// It returns `Some(&T)` if the downcast is successful and `None` otherwise.
     pub fn convert_ok<T: AnyComponent + 'static>(component: Option<&Box<dyn AnyComponent>>) -> Option<&T> {
         return component.and_then(|component| component.as_any().downcast_ref::<T>());
     }
 
-    /// Downcasts a `Option<&mut Box<dyn AnyComponent>>` into a `Option<&mut T>` if possible.
+    /// Downcasts an `Option<&mut Box<dyn AnyComponent>>` into an `Option<&mut T>` if possible.
+    ///
+    /// # Arguments
+    ///
+    /// * `component` - An option containing a mutable reference to a boxed trait object implementing `AnyComponent`.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(&mut T)` if the downcast is successful, providing a mutable reference to the downcasted type `T`.
+    /// Returns `None` if the downcast is not possible or if the input option is `None`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let option_component: Option<&mut Box<dyn AnyComponent>> = // ... (obtain or create an option with a mutable boxed trait object)
+    ///
+    /// // Attempt to downcast the option into a specific type.
+    /// if let Some(component_ref) = convert_mut_ok::<SpecificComponent>(option_component) {
+    ///     // Successfully downcasted to the desired type. Use the mutable reference.
+    /// } else {
+    ///     // Unable to downcast to the desired type or the option is None.
+    /// }
+    /// ```
+    ///
+    /// The method attempts to downcast an option containing a mutable boxed trait object into a mutable reference of the specified type `T`.
+    /// It returns `Some(&mut T)` if the downcast is successful and `None` otherwise.
     pub fn convert_mut_ok<T: AnyComponent + 'static>(component: Option<&mut Box<dyn AnyComponent>>) -> Option<&mut T> {
         return component.and_then(|component| component.as_any_mut().downcast_mut::<T>());
     }
 
     /// Returns `true` if the given entity has the given component. It first checks if the pool exists and then checks
     /// if the pool contains the entity.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - The entity for which the presence of the component is checked.
+    /// * `id` - The identifier of the component to check for.
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the entity has the specified component, and the pool exists. Otherwise, returns `false`.
     pub fn contains(&self, entity: Entity, id: ComponentID) -> bool {
         return match self.map.get(&id) {
             Some(index) => match self.indices.get(index.clone()) {
@@ -67,6 +188,16 @@ impl Components {
     }
 
     /// Adds a component to the given entity. If the entity already has the component, it returns an error.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - The entity to which the component should be added.
+    /// * `value` - A boxed trait object implementing `AnyComponent` representing the component to be added.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the component is successfully added to the entity.
+    /// Returns `Err(())` if the entity already has the component.
     pub fn try_add_any_component(&mut self, entity: Entity, value: Box<dyn AnyComponent>) -> Result<(), ()> {
         let id = value.id();
 
@@ -94,7 +225,17 @@ impl Components {
         return Err(());
     }
 
-    /// Adds a component to the given entity. If the entity already has the component, it returns an error.
+    /// Attempts to remove a component from the given entity. If the entity does not have the specified component, it returns an error.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - The entity from which the component should be removed.
+    /// * `id` - The identifier of the component to be removed.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(Box<dyn AnyComponent>)` with the removed component if successful.
+    /// Returns `Err(())` if the entity does not have the specified component.
     pub fn try_remove_any_component(&mut self, entity: Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
         if !self.contains(entity, id) {
             return Err(());
@@ -121,6 +262,16 @@ impl Components {
     }
 
     /// Returns a reference to the component of the given entity if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - The entity for which to retrieve the component.
+    /// * `id` - The identifier of the component to be retrieved.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(&Box<dyn AnyComponent>)` with a reference to the component if it exists.
+    /// Returns `None` if the entity does not have the specified component.
     pub fn try_get_any_component(&self, entity: Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
         return self.map.get(&id).cloned().and_then(
             |index| self.components.get(index).and_then(
@@ -130,6 +281,16 @@ impl Components {
     }
 
     /// Returns a mutable reference to the component of the given entity if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - The entity for which to retrieve the mutable reference to the component.
+    /// * `id` - The identifier of the component to be retrieved.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(&mut Box<dyn AnyComponent>)` with a mutable reference to the component if it exists.
+    /// Returns `None` if the entity does not have the specified component.
     pub fn try_get_any_mut_component(&mut self, entity: Entity, id: ComponentID) -> Option<&mut Box<dyn AnyComponent>> {
         return self.map.get(&id).cloned().and_then(
             |index| self.components.get_mut(index).and_then(
@@ -139,11 +300,29 @@ impl Components {
     }
 
     /// Returns a reference to the component of the given entity if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - The entity for which to retrieve the component.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(&T)` with a reference to the component of type `T` if it exists.
+    /// Returns `None` if the entity does not have the specified component.
     pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: Entity) -> Option<&T> {
         return Self::convert_ok(self.try_get_any_component(entity, T::component_id()));
     }
 
     /// Returns a mutable reference to the component of the given entity if it exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - The entity for which to retrieve the mutable reference to the component.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(&mut T)` with a mutable reference to the component of type `T` if it exists.
+    /// Returns `None` if the entity does not have the specified component.
     pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Option<&mut T> {
         return Self::convert_mut_ok(self.try_get_any_mut_component(entity, T::component_id()));
     }

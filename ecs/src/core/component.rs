@@ -2,7 +2,7 @@ use std::any::Any;
 
 use ahash::{
     AHashSet,
-    RandomState
+    RandomState,
 };
 
 pub use ecs_macros::Component;
@@ -23,10 +23,18 @@ pub trait AnyComponent {
 
     fn as_any(&self) -> &dyn Any;
 
-    fn into_any (self: Box<Self>) -> Box<dyn Any>;
+    fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
 
 /// Converts a list of ComponentIDs into the Group format by hashing the list of IDs.
+///
+/// # Arguments
+///
+/// * `components` - A hash set (`AHashSet`) of `ComponentID` instances to be converted into the `Group` format.
+///
+/// # Returns
+///
+/// Returns a `Group` instance representing the hashed result of the provided list of `ComponentID` instances.
 pub fn group_id(components: &AHashSet<ComponentID>) -> Group {
     let mut result = 0 as u128;
 

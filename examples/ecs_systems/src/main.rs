@@ -71,7 +71,7 @@ fn main() {
     let mut app = builder.build();
 
     let moderator = app.spawn();
-    let _ = app.try_add_component(moderator, basic::components::SendCloseEventAfterTime {
+    let _ = app.try_add_component(moderator, basic::components::Duration {
         time: 4.0,
     });
 

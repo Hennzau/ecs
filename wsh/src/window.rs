@@ -110,7 +110,7 @@ impl System for WindowController {
         if let winit::platform::pump_events::PumpStatus::Exit(exit_code) = status {
             log::warn!("Exit code: {}", exit_code);
 
-            world.send_event(Box::new(basic::events::CloseApplication {}));
+            world.send_event(Box::new(basic::events::ModeratorCloseApplication {}));
         }
     }
 }
