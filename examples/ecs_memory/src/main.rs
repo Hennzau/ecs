@@ -127,13 +127,11 @@ fn main() {
         }
     }
 
-    let _ = app.multiple_bundle(entities_2).add_component_clone(components::A {}).try_build();
+    let _ = app.try_add_component_set_clone(&entities_2, components::A {});
+    let _ = app.try_add_component_set_clone(&entities_3, components::B {});
+    let _ = app.try_add_component_set_clone(&entities_4, components::C {});
 
-    let _ = app.multiple_bundle(entities_3).add_component_clone(components::B {}).try_build();
-
-    let _ = app.multiple_bundle(entities_4).add_component_clone(components::C {}).try_build();
-
-    let _ = app.multiple_bundle(entities_8).remove_component::<components::A>().remove_component::<components::C>().try_build();
+    let _ = app.set_bundle(entities_8).remove_component::<components::A>().remove_component::<components::C>().try_build();
 
     println!("A: {}", components::A::component_id());
     println!("B: {}", components::B::component_id());

@@ -71,9 +71,7 @@ fn main() {
     let mut app = builder.build();
 
     let moderator = app.spawn();
-    let _ = app.try_add_component(moderator, basic::components::Duration {
-        time: 4.0,
-    });
+    let _ = app.bundle(moderator).add_component(basic::components::Duration::new(4f32)).add_component(basic::components::Modperator {}).try_build();
 
     let entity = app.spawn();
     let _ = app.bundle(entity).add_component(components::Position2Df32 {

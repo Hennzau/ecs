@@ -341,20 +341,18 @@ impl SetBundle<'_> {
         let mut result = Ok(());
 
         for components in self.components_to_add {
-            for (&entity, component) in self.entities.iter().zip(components) {
-                let res = self.application.try_add_any_component(entity, component);
-                if res.is_err() {
-                    result = Err(());
-                }
+            let res = self.application.try_add_any_component_set(&self.entities, components);
+
+            if res.is_err() {
+                result = Err(());
             }
         }
 
         for component in self.components_to_remove {
-            for &entity in &self.entities {
-                let res = self.application.try_remove_any_component(entity, component);
-                if res.is_err() {
-                    result = Err(());
-                }
+            let res = self.application.try_remove_any_component_set(&self.entities, component);
+
+            if res.is_err() {
+                result = Err(());
             }
         }
 

@@ -21,7 +21,7 @@ pub mod events {
     /// Event indicating the request to close the application by a moderator.
     #[derive(Event)]
     pub struct ModeratorCloseApplication {
-        moderator: Entity,
+        pub moderator: Entity,
     }
 
     impl ModeratorCloseApplication {
@@ -179,7 +179,7 @@ pub mod systems {
         /// * `entities` - An array slice (`&[Entity]`) representing the entities affected by the tick. **Must be a singleton**
         /// * `world` - A mutable reference to the `World` instance, allowing modifications within the system logic.
         fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
-            if entities.len() != 1 {
+            if entities.len() > 1 {
                 log::warn!("Different entities are moderator : {:?}. You must create only one moderator at a time", entities);
                 return;
             }
