@@ -20,9 +20,40 @@ use crate::core::{
 /// and that needs to communicate data from its functions.
 pub type CustomSystem = Rc::<RefCell<dyn System>>;
 
+/// This struct lets you build systems without the need to write 'Rc::<RefCell<T>>'
 pub struct SystemBuilder {}
 
 impl SystemBuilder {
+    /// This function provides a way to build a Rc::<RefCell<T>> directly from a T value. It can be used in constructors
+    /// of your custom systems.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The T value representing an instance of a System.
+    ///
+    /// # Returns
+    ///
+    /// Returns a shared pointer Rc::<RefCell<T>> from the T value
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// struct TestSystem {}
+    /// impl System for TestSystem {
+    ///     fn components(&self) -> AHashSet<ComponentID> {
+    ///         return AHashSet::new();
+    ///     }
+    /// }
+    ///
+    /// impl TestSystem {
+    ///     pub fn new () -> CustomSystem {
+    ///         return SystemBuilder::new(Self {});
+    ///     }
+    /// }
+    ///
+    /// ```
     pub fn new<T: System>(value: T) -> Rc::<RefCell<T>> {
         return Rc::new(RefCell::new(value));
     }

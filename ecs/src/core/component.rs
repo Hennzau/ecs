@@ -26,7 +26,7 @@ pub trait AnyComponent {
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
 
-/// Converts a list of ComponentIDs into the Group format by hashing the list of IDs.
+/// Converts a list of ComponentIDs into the Group format by hashing the sum of IDs.
 ///
 /// # Arguments
 ///
@@ -34,7 +34,26 @@ pub trait AnyComponent {
 ///
 /// # Returns
 ///
-/// Returns a `Group` instance representing the hashed result of the provided list of `ComponentID` instances.
+/// Returns a `Group` id representing the hashed result of the provided list of `ComponentID` instances.
+///
+/// # Example
+///
+/// ```
+/// use ecs::prelude::*;
+///
+/// let A = 13855858878564166539 as ComponentID;
+/// let B = 6981191862617893938 as ComponentID;
+///
+/// let mut set = AHashSet::new();
+/// set.insert(A);
+/// set.insert(B);
+///
+/// let group = group_id(&set);
+///
+/// let hasher = RandomState::with_seed(0);
+///
+/// assert!(group == hasher.hash_one(&(A + B)));
+/// ```
 pub fn group_id(components: &AHashSet<ComponentID>) -> Group {
     let mut result = 0 as u128;
 
