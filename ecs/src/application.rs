@@ -395,11 +395,14 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entity = // ... (specify the entity for which to create a bundle)
+    /// use ecs::prelude::*;
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    ///
+    /// let entity = application.spawn();
     ///
     /// // Create a bundle for the specified entity.
-    /// let entity_bundle = application.bundle(target_entity);
+    /// let bundle = application.bundle(entity);
     ///
     /// // Use the entity bundle for modifying or interacting with the entity.
     /// ```
@@ -420,13 +423,16 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let entity_batch = // ... (specify the entity batch using spawn_batch or other methods)
+    /// use ecs::prelude::*;
     ///
-    /// // Create a batch bundle for the specified entity batch.
-    /// let batch_bundle = application.batch_bundle(entity_batch);
+    /// let mut application = ApplicationBuilder::new().build();
     ///
-    /// // Use the batch bundle for modifying or interacting with the entities in the batch.
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// // Create a bundle for the specified batch.
+    /// let bundle = application.batch_bundle(batch);
+    ///
+    /// // Use the batch bundle for modifying or interacting with the batch.
     /// ```
     pub fn batch_bundle(&mut self, batch: (Entity, usize)) -> bundle::BatchBundle {
         return bundle::BatchBundle::new(batch, self);
@@ -445,13 +451,16 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entities = // ... (specify the set of entities for which to create a set bundle)
+    /// use ecs::prelude::*;
     ///
-    /// // Create a set bundle for the specified set of entities.
-    /// let set_bundle = application.set_bundle(target_entities);
+    /// let mut application = ApplicationBuilder::new().build();
     ///
-    /// // Use the set bundle for modifying or interacting with the entities in the set.
+    /// let entities = application.spawn_set(50);
+    ///
+    /// // Create a bundle for the specified set.
+    /// let bundle = application.set_bundle(entities);
+    ///
+    /// // Use the set bundle for modifying or interacting with entities.
     /// ```
     pub fn set_bundle(&mut self, entities: Vec<Entity>) -> bundle::SetBundle {
         return bundle::SetBundle::new(entities, self);
