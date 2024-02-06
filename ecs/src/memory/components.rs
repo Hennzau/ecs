@@ -35,6 +35,7 @@ impl Components {
     ///
     /// The method initializes the internal state of the `Components` struct.
     /// It returns a new instance ready to be used for managing components in hnz ECS.
+
     pub fn new() -> Self {
         return Self {
             components: Vec::new(),
@@ -74,6 +75,7 @@ impl Components {
     ///
     /// The method attempts to downcast a boxed trait object into a reference of the specified type `T`.
     /// It returns `Some(&T)` if the downcast is successful and `None` otherwise.
+
     pub fn convert<T: AnyComponent + 'static>(component: &Box<dyn AnyComponent>) -> Option<&T> {
         return component.as_any().downcast_ref::<T>();
     }
@@ -109,6 +111,7 @@ impl Components {
     ///
     /// The method attempts to downcast a boxed trait object into a mutable reference of the specified type `T`.
     /// It returns `Some(&mut T)` if the downcast is successful and `None` otherwise.
+
     pub fn convert_mut<T: AnyComponent + 'static>(component: &mut Box<dyn AnyComponent>) -> Option<&mut T> {
         return component.as_any_mut().downcast_mut::<T>();
     }
@@ -145,6 +148,7 @@ impl Components {
     ///
     /// The method attempts to downcast an option containing a boxed trait object into a reference of the specified type `T`.
     /// It returns `Some(&T)` if the downcast is successful and `None` otherwise.
+
     pub fn convert_ok<T: AnyComponent + 'static>(component: Option<&Box<dyn AnyComponent>>) -> Option<&T> {
         return component.and_then(|component| component.as_any().downcast_ref::<T>());
     }
@@ -181,6 +185,7 @@ impl Components {
     ///
     /// The method attempts to downcast an option containing a mutable boxed trait object into a mutable reference of the specified type `T`.
     /// It returns `Some(&mut T)` if the downcast is successful and `None` otherwise.
+
     pub fn convert_mut_ok<T: AnyComponent + 'static>(component: Option<&mut Box<dyn AnyComponent>>) -> Option<&mut T> {
         return component.and_then(|component| component.as_any_mut().downcast_mut::<T>());
     }
@@ -211,6 +216,7 @@ impl Components {
     ///
     /// assert!(components.contains(entity, SpecificComponent::component_id()));
     /// ```
+
     pub fn contains(&self, entity: Entity, id: ComponentID) -> bool {
         return match self.map.get(&id) {
             Some(index) => match self.indices.get(index.clone()) {
@@ -246,6 +252,7 @@ impl Components {
     ///
     /// assert!(components.try_add_any_component(entity, Box::new(SpecificComponent {})).is_ok());
     /// ```
+
     pub fn try_add_any_component(&mut self, entity: Entity, value: Box<dyn AnyComponent>) -> Result<(), ()> {
         let id = value.id();
 
@@ -300,6 +307,7 @@ impl Components {
     /// assert!(components.try_remove_any_component(entity, SpecificComponent::component_id()).is_ok());
     ///
     /// ```
+
     pub fn try_remove_any_component(&mut self, entity: Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
         if !self.contains(entity, id) {
             return Err(());
@@ -354,6 +362,7 @@ impl Components {
     ///     // Now 'any_component' is a '&Box<dyn AnyComponent>>'
     /// }
     /// ```
+
     pub fn try_get_any_component(&self, entity: Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
         return self.map.get(&id).cloned().and_then(
             |index| self.components.get(index).and_then(
@@ -391,6 +400,7 @@ impl Components {
     ///     // Now 'any_component' is a '&mut Box<dyn AnyComponent>>'
     /// }
     /// ```
+
     pub fn try_get_any_mut_component(&mut self, entity: Entity, id: ComponentID) -> Option<&mut Box<dyn AnyComponent>> {
         return self.map.get(&id).cloned().and_then(
             |index| self.components.get_mut(index).and_then(
@@ -427,6 +437,7 @@ impl Components {
     ///     // Now 'any_component' is a '&SpecificComponent'
     /// }
     /// ```
+
     pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: Entity) -> Option<&T> {
         return Self::convert_ok(self.try_get_any_component(entity, T::component_id()));
     }
@@ -459,6 +470,7 @@ impl Components {
     ///     // Now 'any_component' is a '&mut SpecificComponent'
     /// }
     /// ```
+
     pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Option<&mut T> {
         return Self::convert_mut_ok(self.try_get_any_mut_component(entity, T::component_id()));
     }

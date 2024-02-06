@@ -128,9 +128,9 @@ impl Entities {
     /// let abc = A::component_id() + B::component_id() + C::component_id();
     ///
     /// let groups = vec![
-    ///     vec![0, 0, 0], // for groups ABC - AB - A
-    ///     vec![0, 0], // For BC - B
-    ///     vec![0, 0] // For AC - C
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0]      // For AC - C
     /// ];
     ///
     /// let mapping = AHashMap::new ();
@@ -144,6 +144,7 @@ impl Entities {
     ///
     /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
     /// ```
+
     pub fn new(groups: Vec<Vec<usize>>, map: AHashMap<Group, (usize, usize)>) -> Self {
         let mut entities = Vec::new();
         let mut indices = Vec::new();
@@ -168,6 +169,7 @@ impl Entities {
     /// Returns a reference to the 'packed/dense' entities array, where each element of the array represents
     /// an array of entities belonging to a specific group.
     /// The returned reference has a lifetime tied to the lifetime of the entity manager.
+
     pub fn entities(&self) -> &[Vec<Entity>] {
         return &self.entities;
     }
@@ -210,9 +212,9 @@ impl Entities {
     /// let abc = A::component_id() + B::component_id() + C::component_id();
     ///
     /// let groups = vec![
-    ///     vec![0, 0, 0], // for groups ABC - AB - A
-    ///     vec![0, 0], // For BC - B
-    ///     vec![0, 0] // For AC - C
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0]      // For AC - C
     /// ];
     ///
     /// let mapping = AHashMap::new ();
@@ -225,15 +227,16 @@ impl Entities {
     /// mapping.insert (c,   (2, 1));
     ///
     /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
-    /// // entities are : vec![1, 2, 3, 4, 5];
-    /// //groups are :           /\          /\
-    /// //                       AB          A
-    /// let entity_slice = try_view("AB" as Group);
+    /// let _ = entities.try_add_group_to_entities(a, &[1, 2, 3, 4, 5]);
+    /// let _ = entities.try_add_group_to_entity(ab, 1);
+    ///
+    /// let entity_slice = try_view(ab);
     /// assert!(entity_slice == Some (&[1]));
     ///
-    /// let entity_slice = try_view("A" as Group);
-    /// assert!(entity_slice == Some (&[1, 2, 3, 4, 5]));
+    /// let entity_slice = try_view(a);
+    /// assert!(entity_slice == Some (&[1, 2, 3, 4, 5]));  // This is pseudo-code, there is no reason that entities would be sorted this way
     /// ```
+
     pub fn try_view(&self, group: Group) -> Option<&[Entity]> {
         return self.map.get(&group).cloned().map_or_else(|| {
             log::warn!("You tried to view entities from group {}, but this group wasn't mapped", group);
@@ -297,7 +300,8 @@ impl Entities {
     /// # Note
     ///
     /// The function does not return anything but directly modifies the array and updates the indices map.
-    pub fn relocate_slice_ahead(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
+
+    fn relocate_slice_ahead(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
         if new_first >= old_first {
             return;
         }
@@ -393,7 +397,8 @@ impl Entities {
     /// # Note
     ///
     /// The function does not return anything but directly modifies the array and updates the indices map.
-    pub fn relocate_slice_behind(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
+
+    fn relocate_slice_behind(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, old_first: usize, new_first: usize, count: usize) {
         if new_first <= old_first {
             return;
         }
@@ -458,7 +463,8 @@ impl Entities {
     /// # Returns
     ///
     /// Returns a vector containing entities that have been swapped next to `end_search`.
-    pub fn move_ahead_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
+
+    fn move_ahead_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
         let mut merged = Vec::<Entity>::new();
 
         for entity in waiting.iter().cloned() {
@@ -500,7 +506,8 @@ impl Entities {
     /// # Returns
     ///
     /// Returns a vector containing entities that have been swapped next to `start_search`.
-    pub fn move_behind_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
+
+    fn move_behind_and_retrieve_waiting_entities(indices: &mut AHashMap<Entity, usize>, array: &mut Vec<Entity>, waiting: &mut Vec<Entity>, start_search: usize, end_search: usize) -> Vec<Entity> {
         let mut merged = Vec::<Entity>::new();
 
         for entity in waiting.iter().cloned() {
@@ -541,6 +548,52 @@ impl Entities {
     ///
     /// Returns `Ok(())` if all entities are successfully associated with the specified group.
     /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0]      // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
+    /// let _ = entities.try_add_group_to_entities(a, &[1, 2, 3, 4, 5]);
+    /// ```
+
     pub fn try_add_group_to_entities(&mut self, group: Group, entities: &[Entity]) -> entities_errors::Result {
         // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
@@ -626,7 +679,53 @@ impl Entities {
     ///
     /// Returns `Ok(())` if the entity is successfully associated with the specified group.
     /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
-    pub fn try_add_group_to_entity(&mut self, group: Group, entity: &Entity) -> entities_errors::Result {
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0]      // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
+    /// let _ = entities.try_add_group_to_entity(a, 1 as Entity);
+    /// ```
+
+    pub fn try_add_group_to_entity(&mut self, group: Group, entity: Entity) -> entities_errors::Result {
         // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
             Some((index, in_index)) => match self.indices.get_mut(index) {
@@ -643,11 +742,11 @@ impl Entities {
                                 false => None
                             } {
                                 for nested in groups_to_cross.iter_mut().rev() {
-                                    if let Some(entity_index) = indices.get(entity).cloned() {
+                                    if let Some(entity_index) = indices.get(&entity).cloned() {
                                         if entity_index >= nested.clone() {
                                             if let Some(previous_entity) = array.get(nested.clone()).cloned() {
                                                 indices.insert(previous_entity, entity_index);
-                                                indices.insert(entity.clone(), nested.clone());
+                                                indices.insert(entity, nested.clone());
 
                                                 array.swap(entity_index, nested.clone());
                                             }
@@ -662,8 +761,8 @@ impl Entities {
 
                                         let entity_index = array.len();
 
-                                        array.push(entity.clone());
-                                        indices.insert(entity.clone(), entity_index);
+                                        array.push(entity);
+                                        indices.insert(entity, entity_index);
 
                                         *nested += 1;
                                     }
@@ -694,6 +793,52 @@ impl Entities {
     ///
     /// Returns `Ok(())` if all entities are successfully associated with all group in groups.
     /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0],      // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
+    /// let _ = entities.try_add_groups_to_entities(vec![a, ab, bc].into_iter().collect(), &[1, 2, 3, 4, 5]);
+    /// ```
+
     pub fn try_add_groups_to_entities(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
         let mut result = Ok(());
 
@@ -719,11 +864,57 @@ impl Entities {
     ///
     /// Returns `Ok(())` if the entity is successfully associated with all group in groups.
     /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0],      // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
+    /// let _ = entities.try_add_groups_to_entity(vec![a, ab, bc].into_iter().collect(), 1 as Entity);
+    /// ```
+
     pub fn try_add_groups_to_entity(&mut self, groups: &AHashSet<Group>, entity: Entity) -> entities_errors::Result {
         let mut result = Ok(());
 
         for group in groups {
-            let res = self.try_add_group_to_entity(group.clone(), &entity);
+            let res = self.try_add_group_to_entity(group.clone(), entity);
             if res.is_err() {
                 result = res;
             }
@@ -745,6 +936,53 @@ impl Entities {
     ///
     /// Returns `Ok(())` if all entities are successfully removed from the specified group.
     /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0]      // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
+    /// let _ = entities.try_add_group_to_entities(a, &[1, 2, 3, 4, 5]);
+    ///
+    /// let _ = entities.try_remove_group_to_entities(a, &[4, 5]);
+    ///```
+
     pub fn try_remove_group_to_entities(&mut self, group: Group, entities: &[Entity]) -> entities_errors::Result {
         // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
@@ -809,6 +1047,53 @@ impl Entities {
     ///
     /// Returns `Ok(())` if the entity is successfully removed from the specified group.
     /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0]      // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
+    /// let _ = entities.try_add_group_to_entities(a, &[1, 2, 3, 4, 5]);
+    ///
+    /// let _ = entities.try_remove_group_to_entity(a, 4);
+    ///```
+
     pub fn try_remove_group_to_entity(&mut self, group: Group, entity: Entity) -> entities_errors::Result {
         // This step involves retrieving all necessary storages to add entities and computing the new position of the entity.
         return match self.map.get(&group).cloned() {
@@ -875,6 +1160,53 @@ impl Entities {
     ///
     /// Returns `Ok(())` if all entities are successfully removed from the specified groups.
     /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0]      // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
+    /// let _ = entities.try_add_groups_to_entities(vec![a, bc].into_iter().collect(), &[1, 2, 3, 4, 5]);
+    ///
+    /// let _ = entities.try_remove_groups_to_entities(vec![b, c].into_iter().collect(), &[4, 5]);
+    ///```
+
     pub fn try_remove_groups_to_entities(&mut self, groups: &AHashSet<Group>, entities: &[Entity]) -> entities_errors::Result {
         let mut result = Ok(());
 
@@ -900,6 +1232,53 @@ impl Entities {
     ///
     /// Returns `Ok(())` if the entity is successfully removed from the specified groups.
     /// If any issues occur or inconsistencies are detected, it returns an `Err` indicating the problematic group.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // Create a new entities storage with initial groups and mapping.
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// // Be aware, components ids and groups ids should be calculated by [`crate::core::component::groupd_id`]
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    /// let ab = A::component_id() + B::component_id();
+    /// let ac = A::component_id() + C::component_id();
+    /// let bc = B::component_id() + C::component_id();
+    /// let abc = A::component_id() + B::component_id() + C::component_id();
+    ///
+    /// let groups = vec![
+    ///     vec![0, 0, 0],  // for groups ABC - AB - A
+    ///     vec![0, 0],     // For BC - B
+    ///     vec![0, 0]      // For AC - C
+    /// ];
+    ///
+    /// let mapping = AHashMap::new ();
+    /// mapping.insert (abc, (0, 0));
+    /// mapping.insert (ab,  (0, 1));
+    /// mapping.insert (a,   (0, 2));
+    /// mapping.insert (bc,  (1, 0));
+    /// mapping.insert (b,   (1, 1));
+    /// mapping.insert (ac,  (2, 0));
+    /// mapping.insert (c,   (2, 1));
+    ///
+    /// let entities = ecs::memory::entities::Entities::new(groups, mapping);
+    /// let _ = entities.try_add_groups_to_entities(vec![a, bc].into_iter().collect(), &[1, 2, 3, 4, 5]);
+    ///
+    /// let _ = entities.try_remove_groups_to_entity(vec![b, c].into_iter().collect(), 4);
+    ///```
+
     pub fn try_remove_groups_to_entity(&mut self, groups: &AHashSet<Group>, entity: Entity) -> entities_errors::Result {
         let mut result = Ok(());
 

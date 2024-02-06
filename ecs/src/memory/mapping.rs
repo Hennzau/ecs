@@ -20,19 +20,6 @@ type IGroup = i128; // We use i128 because we need to be able to represent -u64
 
 const INFTY: u64 = u64::MAX;
 
-/// This module manages memory mapping to generate the appropriate Entities storage
-/// based on the user's chosen set of components.
-///
-/// This mapping principle was conceived by Genouville Grégoire, Bianchi Bérénice, and Le Van Enzo.
-/// It revolves around creating a specialized bipartite graph and employing the Hopcroft-Karp algorithm
-/// to create an optimized mapping for PackedEntities.
-///
-/// The idea is to construct a bipartite graph where each group appears both in the left and right groups.
-/// Then, we connect each group on the left to every group on the right that contains it.
-/// Finally, we use the Hopcroft-Karp algorithm to determine the minimal bipartite matching.
-///
-/// The Hopcroft-Karp algorithm, initially recursive, aims to be transformed into an iterative approach.
-/// Referencing: https://www.baeldung.com/cs/convert-recursion-to-iteration
 pub struct MemoryMapping {
     /// Represents the set of components you intend to use for your systems.
     pub descriptor: MemoryMappingDescriptor,
@@ -60,6 +47,35 @@ impl MemoryMapping {
     /// # Returns
     ///
     /// Returns a new instance of the `MemoryMapping` struct initialized with the provided descriptor.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    ///
+    /// let mut descriptor = Vec::new ();
+    ///
+    /// descriptor.push(vec![a, b].into_iter().collect());
+    /// descriptor.push(vec![a, c].into_iter().collect());
+    /// descriptor.push(vec![b, c].into_iter().collect());
+    /// descriptor.push(vec![a, b, c].into_iter().collect());
+    /// descriptor.push(vec![c].into_iter().collect());
+    ///
+    /// let mapping = ecs::memory::mapping::MemoryMapping::new(descriptor);
+    /// ```
+
     pub fn new(descriptor: MemoryMappingDescriptor) -> MemoryMapping {
         fn second_strictly_contains_first(first: &AHashSet<ComponentID>, second: &AHashSet<ComponentID>) -> bool {
             return first != second && first.is_subset(second);
@@ -139,6 +155,37 @@ impl MemoryMapping {
     /// # Returns
     ///
     /// Returns a new instance of the `Entities` struct representing the optimized storage based on the graph mapping.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    ///
+    /// let mut descriptor = Vec::new ();
+    ///
+    /// descriptor.push(vec![a, b].into_iter().collect());
+    /// descriptor.push(vec![a, c].into_iter().collect());
+    /// descriptor.push(vec![b, c].into_iter().collect());
+    /// descriptor.push(vec![a, b, c].into_iter().collect());
+    /// descriptor.push(vec![c].into_iter().collect());
+    ///
+    /// let mapping = ecs::memory::mapping::MemoryMapping::new(descriptor);
+    ///
+    /// let entities = mapping.create_storage();
+    /// ```
+
     pub fn create_storage(&self) -> Entities {
         let mut groups = Vec::new();
         let mut mapping = AHashMap::new();
@@ -204,6 +251,39 @@ impl MemoryMapping {
     /// # Returns
     ///
     /// Returns a hash set (`AHashSet`) of `Group` instances representing the calculated group memberships after adding the components.
+    ///
+    /// # Example
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct A {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct B {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct C {}
+    ///
+    /// let a = A::component_id();
+    /// let b = B::component_id();
+    /// let c = C::component_id();
+    ///
+    /// let mut descriptor = Vec::new ();
+    ///
+    /// descriptor.push(vec![a, b].into_iter().collect());
+    /// descriptor.push(vec![a, c].into_iter().collect());
+    /// descriptor.push(vec![b, c].into_iter().collect());
+    /// descriptor.push(vec![a, b, c].into_iter().collect());
+    /// descriptor.push(vec![a].into_iter().collect());
+    /// descriptor.push(vec![b].into_iter().collect());
+    /// descriptor.push(vec![c].into_iter().collect());
+    ///
+    /// let mapping = ecs::memory::mapping::MemoryMapping::new(descriptor);
+    ///
+    /// assert!(mapping.get_next_membership(vec![a].into_iter().collect(), vec![b].into_iter().collect()) == vec![b, ab].into_iter().collect())
+    /// ```
+
     pub fn get_next_membership(&self, previous_components: &AHashSet<ComponentID>, components_to_add: &AHashSet<ComponentID>) -> AHashSet<Group> {
         let mut previous_groups = AHashSet::<Group>::new();
         let mut new_groups = AHashSet::<Group>::new();
@@ -235,6 +315,7 @@ impl MemoryMapping {
     /// # Returns
     ///
     /// Returns `true` if any distances are updated, indicating that the algorithm should continue. Returns `false` if no updates are made, indicating completion.
+
     fn compute_distances(layer_one: &AHashMap<Group, Option<IGroup>>, layer_two: &AHashMap<IGroup, Option<Group>>, layer_one_neighbors: &AHashMap<Group, Vec<IGroup>>, distances: &mut AHashMap<Option<IGroup>, u64>) -> bool {
         let mut queue = VecDeque::<Option<Group>>::new();
 
@@ -303,6 +384,7 @@ impl MemoryMapping {
     /// # Returns
     ///
     /// Returns `true` if a matching is found and updated, indicating that the algorithm should continue. Returns `false` if no matching is found, indicating completion.
+    
     fn compute_matching(vertex: Option<Group>, layer_one: &mut AHashMap<Group, Option<IGroup>>, layer_two: &mut AHashMap<IGroup, Option<Group>>, layer_one_neighbors: &AHashMap<Group, Vec<IGroup>>, distances: &mut AHashMap<Option<IGroup>, u64>) -> bool {
         if let Some(vertex) = vertex {
             if let Some(neighbors) = layer_one_neighbors.get(&vertex).cloned() {
