@@ -9,7 +9,6 @@ use crate::{
     application::Application,
 };
 
-/// Represents a bundle of entity-related operations for modification and interaction.
 pub struct Bundle<'a> {
     entity: Entity,
 
@@ -30,6 +29,20 @@ impl Bundle<'_> {
     /// # Returns
     ///
     /// Returns a new Bundle instance with the specified entity and application.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let entity = application.spawn();
+    ///
+    /// let bundle = Bundle::new(entity, &mut application);
+    /// ```
+
     pub fn new(entity: Entity, application: &mut Application) -> Bundle {
         return Bundle {
             entity: entity,
@@ -48,6 +61,28 @@ impl Bundle<'_> {
     /// # Returns
     ///
     /// Returns the updated Bundle instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let entity = application.spawn();
+    ///
+    /// let bundle = Bundle::new(entity, &mut application);
+    /// bundle.add_component(TestComponent1 {});
+    /// bundle.add_component(TestComponent2 {});
+    /// ```
+
     pub fn add_component<T: AnyComponent + 'static>(mut self, component: T) -> Self {
         self.components_to_add.push(Box::new(component));
 
@@ -59,6 +94,28 @@ impl Bundle<'_> {
     /// # Returns
     ///
     /// Returns the updated Bundle instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let entity = application.spawn();
+    ///
+    /// let bundle = Bundle::new(entity, &mut application);
+    /// bundle.add_component(TestComponent1 {});
+    /// bundle.remove_component::<TestComponent1>();
+    /// ```
+
     pub fn remove_component<T: AnyComponent + 'static>(mut self) -> Self {
         self.components_to_remove.push(T::component_id());
 
@@ -74,13 +131,28 @@ impl Bundle<'_> {
     /// # Example
     ///
     /// ```
-    /// let bundle = // ... (create or obtain a Bundle instance)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to build and apply the bundle operations.
-    /// let result = bundle.try_build();
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
     ///
-    /// // Check the result and handle any errors if necessary.
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let entity = application.spawn();
+    ///
+    /// let bundle = Bundle::new(entity, &mut application);
+    /// bundle.add_component(TestComponent1 {});
+    /// bundle.add_component(TestComponent2 {});
+    ///
+    /// let _ = bundle.try_build();
+    ///
+    /// // Now entity should have 2 components : TestComponent1 and TestComponent2
     /// ```
+
     pub fn try_build(self) -> Result<(), ()> {
         let mut result = Ok(());
 
@@ -102,7 +174,6 @@ impl Bundle<'_> {
     }
 }
 
-/// Represents a bundle of batch-related operations for modification and interaction.
 pub struct BatchBundle<'a> {
     batch: (Entity, usize),
 
@@ -123,6 +194,21 @@ impl BatchBundle<'_> {
     /// # Returns
     ///
     /// Returns a new Bundle instance with the specified batch and application.
+    /// Creates a new instance of the Bundle for the specified entity and application.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let bundle = BatchBundle::new(batch, &mut application);
+    /// ```
+
     pub fn new(batch: (Entity, usize), application: &mut Application) -> BatchBundle {
         return BatchBundle {
             batch: batch,
@@ -141,6 +227,29 @@ impl BatchBundle<'_> {
     /// # Returns
     ///
     /// Returns the updated Bundle instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let bundle = BatchBundle::new(batch, &mut application);
+    ///
+    /// bundle.add_component(vec![TestComponent1 {}; 100]);
+    /// bundle.add_component(vec![TestComponent2 {}; 100]);
+    /// ```
+
     pub fn add_component<T: AnyComponent + 'static>(mut self, components: Vec<T>) -> Self {
         if components.len() != self.batch.1 {
             log::warn!("You tried to add components for this batch : {:?} but you did not pass enough components for all\
@@ -170,6 +279,29 @@ impl BatchBundle<'_> {
     /// # Returns
     ///
     /// Returns the updated Bundle instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct TestComponent1 {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let bundle = BatchBundle::new(batch, &mut application);
+    ///
+    /// bundle.add_component_clone(TestComponent1 {});
+    /// bundle.add_component_clone(TestComponent2 {});
+    /// ```
+
     pub fn add_component_clone<T: Clone + AnyComponent + 'static>(mut self, component: T) -> Self {
         let mut box_components = Vec::<Box<dyn AnyComponent>>::new();
 
@@ -187,6 +319,29 @@ impl BatchBundle<'_> {
     /// # Returns
     ///
     /// Returns the updated Bundle instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let bundle = BatchBundle::new(batch, &mut application);
+    ///
+    /// bundle.add_component(vec![TestComponent1 {}; 100]);
+    /// bundle.remove_component::<TestComponent1> ();
+    /// ```
+
     pub fn remove_component<T: AnyComponent + 'static>(mut self) -> Self {
         self.components_to_remove.push(T::component_id());
 
@@ -202,13 +357,28 @@ impl BatchBundle<'_> {
     /// # Example
     ///
     /// ```
-    /// let bundle = // ... (create or obtain a Bundle instance)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to build and apply the bundle operations.
-    /// let result = bundle.try_build();
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
     ///
-    /// // Check the result and handle any errors if necessary.
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let bundle = BatchBundle::new(batch, &mut application);
+    ///
+    /// bundle.add_component(vec![TestComponent1 {}; 100]);
+    ///
+    /// bundle.try_build();
+    ///
+    /// // Now every entity in the batch should have TestComponent1
     /// ```
+
     pub fn try_build(self) -> Result<(), ()> {
         let mut result = Ok(());
 
@@ -230,7 +400,6 @@ impl BatchBundle<'_> {
     }
 }
 
-/// Represents a bundle of set-related operations for modification and interaction.
 pub struct SetBundle<'a> {
     entities: Vec<Entity>,
 
@@ -251,6 +420,20 @@ impl SetBundle<'_> {
     /// # Returns
     ///
     /// Returns a new Bundle instance with the specified entity and application.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let set = application.spawn_set(100);
+    ///
+    /// let bundle = SetBundle::new(set, &mut application);
+    /// ```
+
     pub fn new(entities: Vec<Entity>, application: &mut Application) -> SetBundle {
         return SetBundle {
             entities: entities,
@@ -269,6 +452,28 @@ impl SetBundle<'_> {
     /// # Returns
     ///
     /// Returns the updated Bundle instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let set = application.spawn_set(100);
+    ///
+    /// let bundle = SetBundle::new(set, &mut application);
+    ///
+    /// bundle.add_component(vec![TestComponent1 {}; 100]);
+    /// ```
+
     pub fn add_component<T: AnyComponent + 'static>(mut self, components: Vec<T>) -> Self {
         if components.len() != self.entities.len() {
             log::warn!("You tried to add components for this set : {:?} but you did not pass enough components for all\
@@ -298,6 +503,28 @@ impl SetBundle<'_> {
     /// # Returns
     ///
     /// Returns the updated Bundle instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct TestComponent1 {}
+    ///
+    /// #[derive(Clone, Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let set = application.spawn_set(100);
+    ///
+    /// let bundle = SetBundle::new(set, &mut application);
+    ///
+    /// bundle.add_component(TestComponent1 {});
+    /// ```
+
     pub fn add_component_clone<T: Clone + AnyComponent + 'static>(mut self, component: T) -> Self {
         let mut box_components = Vec::<Box<dyn AnyComponent>>::new();
 
@@ -315,6 +542,29 @@ impl SetBundle<'_> {
     /// # Returns
     ///
     /// Returns the updated Bundle instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let set = application.spawn_set(100);
+    ///
+    /// let bundle = SetBundle::new(set, &mut application);
+    ///
+    /// bundle.add_component(vec![TestComponent1 {}; 100]);
+    /// bundle.remove_component::<TestComponent1> ();
+    /// ```
+
     pub fn remove_component<T: AnyComponent + 'static>(mut self) -> Self {
         self.components_to_remove.push(T::component_id());
 
@@ -330,13 +580,27 @@ impl SetBundle<'_> {
     /// # Example
     ///
     /// ```
-    /// let bundle = // ... (create or obtain a Bundle instance)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to build and apply the bundle operations.
-    /// let result = bundle.try_build();
+    /// #[derive(Component)]
+    /// pub struct TestComponent1 {}
     ///
-    /// // Check the result and handle any errors if necessary.
+    /// #[derive(Component)]
+    /// pub struct TestComponent2 {}
+    ///
+    /// let app_builder = ApplicationBuilder::new();
+    /// let application = app_builder.build();
+    ///
+    /// let set = application.spawn_set(100);
+    ///
+    /// let bundle = SetBundle::new(set, &mut application);
+    ///
+    /// bundle.add_component(vec![TestComponent1 {}; 100]);
+    /// bundle.try_build();
+    ///
+    /// // Now every entities in 'set' should have TestComponent1
     /// ```
+
     pub fn try_build(self) -> Result<(), ()> {
         let mut result = Ok(());
 

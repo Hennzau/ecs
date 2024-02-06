@@ -86,7 +86,7 @@ pub mod components {
 
     /// Component representing a Moderator : it is a special component for managing application
     #[derive(Component)]
-    pub struct Modperator {}
+    pub struct Moderator {}
 
     /// Component representing a time duration.
     #[derive(Component)]
@@ -141,7 +141,7 @@ pub mod systems {
             },
         },
     };
-    use crate::prelude::basic::components::Modperator;
+    use crate::prelude::basic::components::Moderator;
 
     /// This system identifies if a moderator with a time duration should close the application
     pub struct CloseApplication {
@@ -154,7 +154,7 @@ pub mod systems {
         /// # Returns
         ///
         /// Returns a new instance of the CloseApplication system. This instance is wrapped
-        /// with a Rc::<RefCell<dyn System>> == CustomSystem, using SystemBuilder::new function
+        /// with a `Rc::<RefCell<dyn System>>` that is typed as `CustomSystem`, using [`SystemBuilder::new`] function
         pub fn new() -> CustomSystem {
             return SystemBuilder::new(Self {
                 time: 0.0
@@ -166,7 +166,7 @@ pub mod systems {
         fn components(&self) -> AHashSet<ComponentID> {
             return vec![
                 Duration::component_id(),
-                Modperator::component_id(),
+                Moderator::component_id(),
             ].into_iter().collect();
         }
         /// Handles the system logic on each tick of the game loop. It identifies if there is only one moderator

@@ -10,7 +10,7 @@
 /// Finally, we use the Hopcroft-Karp algorithm to determine the minimal bipartite matching.
 ///
 /// The Hopcroft-Karp algorithm, initially recursive, aims to be transformed into an iterative approach.
-/// Referencing: https://www.baeldung.com/cs/convert-recursion-to-iteration
+/// Referencing: <https://www.baeldung.com/cs/convert-recursion-to-iteration>
 
 pub mod mapping;
 
@@ -20,7 +20,7 @@ pub mod mapping;
 /// without necessitating iteration or conditional statements.
 ///
 /// This approach is founded on the concept of 'nested storages' introduced by other ECS systems,
-/// notably Skypjack in his blog: https://skypjack.github.io/ for EnTT.
+/// notably Skypjack in his blog: <https://skypjack.github.io/> for EnTT.
 /// It involves smart swapping strategies to avoid fragmenting the main array.
 
 pub mod entities;

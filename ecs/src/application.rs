@@ -163,7 +163,7 @@ impl Application {
     /// # Note
     ///
     /// Use this method when you need to spawn a lot of similar entities with the same components. If entities have different components,
-    /// consider using the `spawn` method for individual entity spawning.
+    /// consider using the `spawn` method for individual entity spawning or 'spawn_set' for multiple entity spawning.
     ///
     /// # Example
     ///
@@ -184,6 +184,37 @@ impl Application {
         }
 
         return (leader, amount);
+    }
+
+    /// Spawns a set of entities and returns their IDs.
+    ///
+    /// # Arguments
+    ///
+    /// * `amount` - The number of entities to spawn in the set.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Vec<Entity>` containing the IDs.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let mut application = // ... (create or obtain an Application instance)
+    /// let batch_size = // ... (specify the number of entities to spawn in the batch)
+    ///
+    /// // Spawn a batch of entities and get the ID of the first entity and the total number of entities spawned.
+    /// let (first_entity_id, total_spawned) = application.spawn_batch(batch_size);
+    ///
+    /// // Use the IDs of the spawned entities for further operations.
+    /// ```
+    pub fn spawn_set(&mut self, amount: usize) -> Vec<Entity> {
+        let mut entities = Vec::new();
+
+        for _ in 0..amount {
+            entities.push(self.spawn());
+        }
+
+        return entities;
     }
 
     /// Runs the application loop with a specified maximum rate for tick systems.
