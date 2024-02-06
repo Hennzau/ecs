@@ -88,18 +88,24 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let descriptor = // ... (create or obtain a MemoryMappingDescriptor instance)
-    /// let event_systems = // ... (create or obtain an AHashMap of EventID and Vec<CustomSystem>)
-    /// let join_systems = // ... (create or obtain an AHashMap of Group and Vec<CustomSystem>)
-    /// let quit_systems = // ... (create or obtain an AHashMap of Group and Vec<CustomSystem>)
-    /// let tick_systems = // ... (create or obtain a Vec<CustomSystem> for tick systems)
+    /// use ecs::memory::mapping::MemoryMappingDescriptor;
+    ///
+    /// use ecs::prelude::*;
+    ///
+    /// let descriptor = MemoryMappingDescriptor::new();
+    /// let event_systems = AHashMap::new();
+    /// let join_systems = AHashMap::new();
+    /// let quit_systems = AHashMap::new();
+    /// let tick_systems = Vec::new();
     ///
     /// // Create a new instance of the Application with the specified configurations.
     /// let application = Application::new(descriptor, event_systems, join_systems, quit_systems, tick_systems);
-    ///
-    /// // Start and run the created application.
-    /// application.run();
     /// ```
+    ///
+    /// # Note
+    ///
+    /// User should use [`crate::application::builder::ApplicationBuilder`] to create new instance of an Application
+
     pub fn new(descriptor: MemoryMappingDescriptor,
                event_systems: AHashMap<EventID, Vec<CustomSystem>>,
                join_systems: AHashMap<Group, Vec<CustomSystem>>,
@@ -134,13 +140,15 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
+    /// use ecs::prelude::*;
     ///
-    /// // Spawn a new entity and get its ID.
+    /// let mut application = ApplicationBuilder::new().build(); // Empty application with no systems
+    ///
     /// let new_entity_id = application.spawn();
     ///
     /// // Use the newly spawned entity ID for further operations.
     /// ```
+
     pub fn spawn(&mut self) -> Entity {
         let result = self.next_entity;
 
@@ -168,14 +176,18 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let batch_size = // ... (specify the number of entities to spawn in the batch)
+    /// use ecs::prelude::*;
+    ///
+    /// let mut application = ApplicationBuilder::new().build(); // Empty application
     ///
     /// // Spawn a batch of entities and get the ID of the first entity and the total number of entities spawned.
-    /// let (first_entity_id, total_spawned) = application.spawn_batch(batch_size);
+    /// let (first_entity_id, total_spawned) = application.spawn_batch(100);
+    ///
+    /// assert!(total_spawned == 100);
     ///
     /// // Use the IDs of the spawned entities for further operations.
     /// ```
+
     pub fn spawn_batch(&mut self, amount: usize) -> (Entity, usize) {
         let leader = self.spawn();
 
@@ -199,14 +211,16 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let batch_size = // ... (specify the number of entities to spawn in the batch)
+    /// use ecs::prelude::*;
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
     ///
     /// // Spawn a batch of entities and get the ID of the first entity and the total number of entities spawned.
-    /// let (first_entity_id, total_spawned) = application.spawn_batch(batch_size);
+    /// let entities = application.spawn_set(50);
     ///
-    /// // Use the IDs of the spawned entities for further operations.
+    /// assert!(entities.len() == 50);
     /// ```
+
     pub fn spawn_set(&mut self, amount: usize) -> Vec<Entity> {
         let mut entities = Vec::new();
 
@@ -226,12 +240,14 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let max_tick_rate = // ... (specify the maximum rate for tick systems)
+    /// use ecs::prelude::*;
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
     ///
     /// // Run the application loop with the specified maximum tick rate.
-    /// application.run(max_tick_rate);
+    /// application.run(60f32);
     /// ```
+
     pub fn run(&mut self, max_rate: f32) {
         let starting_time = time::Instant::now();
         let mut previous_time = 0f32;
@@ -288,8 +304,11 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let application = // ... (create or obtain an Application instance)
-    /// let target_group = // ... (specify the group for which to view entities)
+    /// use ecs::prelude::*;
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    ///
+    /// let target_group = 1283719281320; // Let's imagine that this is the unique ID of a certain group.
     ///
     /// // Try to view a slice of entities belonging to the specified group.
     /// if let Some(entity_slice) = application.try_view(target_group) {
@@ -298,6 +317,7 @@ impl Application {
     ///     // Handle the case where the specified group is not found.
     /// }
     /// ```
+
     pub fn try_view(&self, group: Group) -> Option<&[Entity]> {
         return self.entities.try_view(group);
     }
@@ -307,17 +327,7 @@ impl Application {
     /// # Returns
     ///
     /// Returns a reference to the internal storage of entities organized by their components.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let application = // ... (create or obtain an Application instance)
-    ///
-    /// // Get a reference to the internal storage of entities.
-    /// let entity_storage = application.entities();
-    ///
-    /// // Use the entity storage for further operations.
-    /// ```
+
     pub fn entities(&self) -> &[Vec<Entity>] {
         return self.entities.entities();
     }
@@ -331,17 +341,8 @@ impl Application {
     /// # Arguments
     ///
     /// * `event` - The event to be processed by the event systems.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let custom_event = // ... (create or obtain a Box<dyn AnyEvent> instance)
-    ///
-    /// // Launch event systems to handle the specified event.
-    /// application.launch_event_systems(custom_event);
-    /// ```
-    pub fn launch_event_systems(&mut self, event: Box<dyn AnyEvent>) {
+
+    fn launch_event_systems(&mut self, event: Box<dyn AnyEvent>) {
         let mut world = World::new(&mut self.components);
 
         if let Some(systems) = self.event_systems.get_mut(&event.id()) {
@@ -362,17 +363,8 @@ impl Application {
     /// # Arguments
     ///
     /// * `delta_time` - The time elapsed since the last tick in seconds.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let elapsed_time = // ... (calculate or obtain the time elapsed since the last tick)
-    ///
-    /// // Launch tick systems with the specified delta time.
-    /// application.launch_tick_systems(elapsed_time);
-    /// ```
-    pub fn launch_tick_systems(&mut self, delta_time: f32) {
+
+    fn launch_tick_systems(&mut self, delta_time: f32) {
         let mut world = World::new(&mut self.components);
 
         for system in &mut self.tick_systems {
