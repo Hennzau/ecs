@@ -481,6 +481,26 @@ impl Application {
     ///
     /// Returns `Some(&Box<dyn AnyComponent>)` with a reference to the component if it exists.
     /// Returns `None` if the entity does not have the specified component.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_component(entity, TestComponent {});
+    ///
+    /// // Try to get the component of the specified entity.
+    /// if let Some(any_component) = application.try_get_any_component(entity, TestComponent::component_id()) {
+    ///     // Now any_component is a `&Box<dyn AnyComponent>`
+    /// }
+    ///  ```
+
     pub fn try_get_any_component(&self, entity: Entity, id: ComponentID) -> Option<&Box<dyn AnyComponent>> {
         return self.components.try_get_any_component(entity, id);
     }
@@ -496,6 +516,26 @@ impl Application {
     ///
     /// Returns `Some(&mut Box<dyn AnyComponent>)` with a mutable reference to the component if it exists.
     /// Returns `None` if the entity does not have the specified component.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_component(entity, TestComponent {});
+    ///
+    /// // Try to get the component of the specified entity.
+    /// if let Some(any_component) = application.try_get_any_mut_component(entity, TestComponent::component_id()) {
+    ///     // Now any_component is a `&mut Box<dyn AnyComponent>`
+    /// }
+    ///  ```
+
     pub fn try_get_any_mut_component(&mut self, entity: Entity, id: ComponentID) -> Option<&mut Box<dyn AnyComponent>> {
         return self.components.try_get_any_mut_component(entity, id);
     }
@@ -510,6 +550,26 @@ impl Application {
     ///
     /// Returns `Some(&T)` with a reference to the component of type `T` if it exists.
     /// Returns `None` if the entity does not have the specified component.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_component(entity, TestComponent {});
+    ///
+    /// // Try to get the component of the specified entity.
+    /// if let Some(any_component) = application.try_get_component::<TestComponent>(entity) {
+    ///     // Now any_component is a `&TestComponent`
+    /// }
+    ///  ```
+
     pub fn try_get_component<T: AnyComponent + 'static>(&self, entity: Entity) -> Option<&T> {
         return self.components.try_get_component::<T>(entity);
     }
@@ -524,6 +584,26 @@ impl Application {
     ///
     /// Returns `Some(&mut T)` with a mutable reference to the component of type `T` if it exists.
     /// Returns `None` if the entity does not have the specified component.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_component(entity, TestComponent {});
+    ///
+    /// // Try to get the component of the specified entity.
+    /// if let Some(any_component) = application.try_get_mut_component::<TestComponent>(entity) {
+    ///     // Now any_component is a `&mut TestComponent`
+    /// }
+    ///  ```
+
     pub fn try_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Option<&mut T> {
         return self.components.try_get_mut_component::<T>(entity);
     }
@@ -543,6 +623,21 @@ impl Application {
     ///
     /// Returns `Ok(())` if the component is successfully added to the entity.
     /// Returns `Err(())` if the entity already has the component.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_any_component(entity, Box::new (TestComponent {}));
+    ///  ```
+
     pub fn try_add_any_component(&mut self, entity: Entity, value: Box<dyn AnyComponent>) -> Result<(), ()> {
         let id = value.id();
 
@@ -592,15 +687,17 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let entity_batch = // ... (specify the entity batch using spawn_batch or other methods)
-    /// let components_to_add = // ... (create or obtain a vector of components to add)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add multiple components to entities in the specified batch.
-    /// let result = application.try_add_any_component_batch(entity_batch, components_to_add);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let _ = application.try_add_any_component_batch(batch, vec![Box::new (TestComponent {}); 100]);
+    ///  ```
+
     pub fn try_add_any_component_batch(&mut self, batch: (Entity, usize), values: Vec<Box<dyn AnyComponent>>) -> Result<(), ()> {
         let (leader, amount) = batch;
         if let Some(previous_components) = self.components_tracker.get(&leader) {
@@ -661,15 +758,17 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entities = // ... (specify the set of entities to which components should be added)
-    /// let components_to_add = // ... (create or obtain a vector of components to add)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add multiple components to entities in the specified set.
-    /// let result = application.try_add_any_component_set(target_entities, components_to_add);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let set = application.spawn_set(50);
+    ///
+    /// let _ = application.try_add_any_component_set(set, vec![Box::new (TestComponent {}); 50]);
+    ///  ```
+
     pub fn try_add_any_component_set(&mut self, set: &[Entity], values: Vec<Box<dyn AnyComponent>>) -> Result<(), ()> {
         let mut result = Ok(());
         for (entity, component) in set.iter().zip(values) {
@@ -695,15 +794,17 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entity = // ... (specify the entity to which the component should be added)
-    /// let component_value = // ... (create or obtain the value of the component to be added)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add a specific type of component to the specified entity.
-    /// let result = application.try_add_component(target_entity, component_value);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_component(entity, TestComponent {});
+    ///  ```
+
     pub fn try_add_component<T: AnyComponent + 'static>(&mut self, entity: Entity, value: T) -> Result<(), ()> {
         return self.try_add_any_component(entity, Box::from(value));
     }
@@ -722,15 +823,17 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let entity_batch = // ... (specify the entity batch using spawn_batch or other methods)
-    /// let components_to_add = // ... (create or obtain a vector of components to add)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add multiple components of a specific type to entities in the specified batch.
-    /// let result = application.try_add_component_batch(entity_batch, components_to_add);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let _ = application.try_add_component_batch(batch, vec![TestComponent {};100]);
+    ///  ```
+
     pub fn try_add_component_batch<T: AnyComponent + 'static>(&mut self, batch: (Entity, usize), values: Vec<T>) -> Result<(), ()> {
         let mut box_values = Vec::<Box<dyn AnyComponent>>::new();
 
@@ -755,16 +858,17 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// use std::clone::Clone;
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let entity_batch = // ... (specify the entity batch using spawn_batch or other methods)
-    /// let component_value = // ... (create or obtain the cloned instance of the component to add)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add multiple cloned instances of a specific type of component to entities in the specified batch.
-    /// let result = application.try_add_component_batch_clone(entity_batch, component_value);
+    /// #[derive(Clone, Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let _ = application.try_add_component_batch(batch, TestComponent {});
+    ///  ```
+
     pub fn try_add_component_batch_clone<T: Clone + AnyComponent + 'static>(&mut self, batch: (Entity, usize), value: T) -> Result<(), ()> {
         let mut values = Vec::<Box<dyn AnyComponent>>::new();
 
@@ -789,15 +893,17 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entities = // ... (specify the set of entities to which components should be added)
-    /// let components_to_add = // ... (create or obtain a vector of components to add)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add multiple components of a specific type to entities in the specified set.
-    /// let result = application.try_add_component_set(target_entities, components_to_add);
+    /// #[derive(Clone, Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let set = application.spawn_set(50);
+    ///
+    /// let _ = application.try_add_component_set(set, vec![TestComponent {}; 50]);
+    ///  ```
+
     pub fn try_add_component_set<T: AnyComponent + 'static>(&mut self, entities: &[Entity], values: Vec<T>) -> Result<(), ()> {
         let mut box_values = Vec::<Box<dyn AnyComponent>>::new();
 
@@ -822,16 +928,17 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// use std::clone::Clone;
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entities = // ... (specify the set of entities to which cloned instances should be added)
-    /// let component_value = // ... (create or obtain the cloned instance of the component to add)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add multiple cloned instances of a specific type of component to entities in the specified set.
-    /// let result = application.try_add_component_set_clone(target_entities, component_value);
+    /// #[derive(Clone, Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let set = application.spawn_set(50);
+    ///
+    /// let _ = application.try_add_component_set_clone(set, TestComponent {});
+    ///  ```
+
     pub fn try_add_component_set_clone<T: Clone + AnyComponent + 'static>(&mut self, entities: &[Entity], value: T) -> Result<(), ()> {
         let mut box_values = Vec::<Box<dyn AnyComponent>>::new();
 
@@ -856,15 +963,19 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entity = // ... (specify the entity to which the component should be added)
-    /// let component_value = // ... (create or obtain the value of the component to be added)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add a specific type of component to the specified entity and get a reference to the added component.
-    /// let result = application.try_add_get_component(target_entity, component_value);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and use the reference to the added component if successful.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// if let Some (test) = application.try_add_get_component(entity, TestComponent {}) {
+    ///     // Now test is a `&TestComponent`
+    /// }
+    ///  ```
+
     pub fn try_add_get_component<T: AnyComponent + 'static>(&mut self, entity: Entity, value: T) -> Option<&T> {
         return match self.try_add_component::<T>(entity, value) {
             Ok(()) => self.try_get_component::<T>(entity),
@@ -886,15 +997,19 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entity = // ... (specify the entity to which the component should be added)
-    /// let component_value = // ... (create or obtain the value of the component to be added)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to add a specific type of component to the specified entity and get a mutable reference to the added component.
-    /// let result = application.try_add_get_mut_component(target_entity, component_value);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and use the mutable reference to the added component if successful.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// if let Some (test) = application.try_add_get_mut_component(entity, TestComponent {}) {
+    ///     // Now test is a `&mut TestComponent`
+    /// }
+    ///  ```
+
     pub fn try_add_get_mut_component<T: AnyComponent + 'static>(&mut self, entity: Entity, value: T) -> Option<&mut T> {
         return match self.try_add_component::<T>(entity, value) {
             Ok(()) => self.try_get_mut_component::<T>(entity),
@@ -920,15 +1035,19 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entity = // ... (specify the entity from which the component should be removed)
-    /// let component_id = // ... (specify the identifier of the component type to be removed)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to remove a component of a specific type from the specified entity.
-    /// let result = application.try_remove_any_component(target_entity, component_id);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_any_component(entity, Box::new (TestComponent {}));
+    ///
+    /// let _ = application.try_remove_any_component(entity, TestComponent::component_id());
+    ///  ```
+
     pub fn try_remove_any_component(&mut self, entity: Entity, id: ComponentID) -> Result<Box<dyn AnyComponent>, ()> {
         return match self.components.try_remove_any_component(entity, id) {
             Ok(any_component) => {
@@ -977,15 +1096,18 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let entity_batch = // ... (specify the entity batch using spawn_batch or other methods)
-    /// let component_id = // ... (specify the identifier of the component type to be removed)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to remove components of a specific type from entities in the specified batch.
-    /// let result = application.try_remove_any_component_batch(entity_batch, component_id);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let _ = application.try_add_any_component_batch(batch, vec![Box::new (TestComponent {}); 100]);
+    /// let _ = application.try_remove_any_component_batch(batch, TestComponent::component_id());
+    ///  ```
+
     pub fn try_remove_any_component_batch(&mut self, batch: (Entity, usize), id: ComponentID) -> Result<Vec<Box<dyn AnyComponent>>, ()> {
         let (leader, amount) = batch;
         let entities = (leader..(leader + amount as u64)).collect::<Vec<Entity>>();
@@ -1051,15 +1173,19 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entities = // ... (specify the set of entities from which components should be removed)
-    /// let component_id = // ... (specify the identifier of the component type to be removed)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to remove components of a specific type from entities in the specified set.
-    /// let result = application.try_remove_any_component_set(target_entities, component_id);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let set = application.spawn_set(50);
+    ///
+    /// let _ = application.try_add_any_component_set(set, vec![Box::new (TestComponent {}); 50]);
+    ///
+    /// let _ = application.try_remove_any_component_set(set, TestComponent::component_id());
+    ///  ```
+
     pub fn try_remove_any_component_set(&mut self, entities: &[Entity], id: ComponentID) -> Result<Vec<Box<dyn AnyComponent>>, ()> {
         let mut result = Ok(Vec::new());
         for &entity in entities {
@@ -1084,14 +1210,19 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entity = // ... (specify the entity from which the component should be removed)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to remove a component of a specific type from the specified entity.
-    /// let result = application.try_remove_component::<YourComponentType>(target_entity);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_component(entity, TestComponent {});
+    ///
+    /// let _ = application.try_remove_component::<TestComponent>(entity);
+    ///  ```
+
     pub fn try_remove_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Result<(), ()> {
         return self.try_remove_any_component(entity, T::component_id()).map(|_| ());
     }
@@ -1109,14 +1240,19 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let entity_batch = // ... (specify the entity batch using spawn_batch or other methods)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to remove components of a specific type from entities in the specified batch.
-    /// let result = application.try_remove_component_batch::<YourComponentType>(entity_batch);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let batch = application.spawn_batch(100);
+    ///
+    /// let _ = application.try_add_component_batch(batch, vec![TestComponent {};100]);
+    ///
+    /// let _ = application.try_remove_component_batch::<TestComponent>(batch);
+    ///  ```
+
     pub fn try_remove_component_batch<T: AnyComponent + 'static>(&mut self, batch: (Entity, usize)) -> Result<(), ()> {
         return self.try_remove_any_component_batch(batch, T::component_id()).map(|_| ());
     }
@@ -1134,14 +1270,19 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entities = // ... (specify the set of entities from which components should be removed)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to remove components of a specific type from entities in the specified set.
-    /// let result = application.try_remove_component_set::<YourComponentType>(target_entities);
+    /// #[derive(Clone, Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and handle any errors if necessary.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let set = application.spawn_set(50);
+    ///
+    /// let _ = application.try_add_component_set(set, vec![TestComponent {}; 50]);
+    ///
+    /// let _ = application.try_remove_component_set::<TestComponent>(set);
+    ///  ```
+
     pub fn try_remove_component_set<T: AnyComponent + 'static>(&mut self, entities: &[Entity]) -> Result<(), ()> {
         return self.try_remove_any_component_set(entities, T::component_id()).map(|_| ());
     }
@@ -1160,15 +1301,21 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entity = // ... (specify the entity from which the component should be removed)
-    /// let component_id = // ... (specify the identifier of the component type to be removed)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to remove a component of a specific type from the specified entity and get a boxed instance of the removed component.
-    /// let result = application.try_remove_get_any_component(target_entity, component_id);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and use the boxed instance of the removed component if successful.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_get_component(entity, TestComponent {});
+    ///
+    /// if let Some (test) = application.try_remove_get_any_component(entity, TestComponent::component_id()) {
+    ///   // Now test is a `Box<dyn AnyComponent>`
+    /// }
+    ///  ```
+
     pub fn try_remove_get_any_component(&mut self, entity: Entity, id: ComponentID) -> Option<Box<dyn AnyComponent>> {
         return self.try_remove_any_component(entity, id).ok();
     }
@@ -1186,14 +1333,21 @@ impl Application {
     /// # Example
     ///
     /// ```
-    /// let mut application = // ... (create or obtain an Application instance)
-    /// let target_entity = // ... (specify the entity from which the component should be removed)
+    /// use ecs::prelude::*;
     ///
-    /// // Try to remove a component of a specific type from the specified entity and get a boxed instance of the removed component.
-    /// let result = application.try_remove_get_component::<YourComponentType>(target_entity);
+    /// #[derive(Component)]
+    /// pub struct TestComponent {}
     ///
-    /// // Check the result and use the boxed instance of the removed component if successful.
-    /// ```
+    /// let mut application = ApplicationBuilder::new().build();
+    /// let entity = application.spawn();
+    ///
+    /// let _ = application.try_add_get_component(entity, TestComponent {});
+    ///
+    /// if let Some (test) = application.try_remove_get_component::<TestComponent>(entity) {
+    ///   // Now test is a `Box<TestComponent>`
+    /// }
+    ///  ```
+
     pub fn try_remove_get_component<T: AnyComponent + 'static>(&mut self, entity: Entity) -> Option<Box<T>> {
         return self.try_remove_any_component(entity, T::component_id()).ok().and_then(
             |component| component.into_any().downcast::<T>().ok());
