@@ -64,14 +64,14 @@ pub mod events {
     #[derive(Event)]
     pub struct TryAddComponentBatch {
         pub batch: (Entity, usize),
-        pub component: Vec<Box<dyn AnyComponent>>,
+        pub components: Vec<Box<dyn AnyComponent>>,
     }
 
     /// Event indicating the request to add a component to a set
     #[derive(Event)]
     pub struct TryAddComponentSet {
         pub entities: Vec<Entity>,
-        pub component: Vec<Box<dyn AnyComponent>>,
+        pub components: Vec<Box<dyn AnyComponent>>,
     }
 }
 

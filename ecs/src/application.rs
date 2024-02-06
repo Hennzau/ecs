@@ -259,29 +259,15 @@ impl Application {
             previous_time = now_time;
 
             while let Some(event) = self.events.pop_front() {
-                if let Some(event) = event.as_any().downcast_ref::<basic::events::ModeratorCloseApplication>() {
-                    log::info!("Application closed by moderator {}", event.moderator);
+                let (close, event) = self.process_event(event);
 
+                if close {
                     break 'main;
                 }
 
-                if let Some(_) = event.as_any().downcast_ref::<basic::events::CloseApplication>() {
-                    break 'main;
-                }
-
-                if let Some(event) = event.as_any().downcast_ref::<basic::events::TryRemoveComponent>() {
-                    let _ = self.try_remove_any_component(event.entity, event.component_id);
-                } else if let Some(_) = event.as_any().downcast_ref::<basic::events::TryAddComponent>() {
-                    let event = event.into_any().downcast::<basic::events::TryAddComponent>().unwrap();
-
-                    let entity = event.entity.clone();
-
-                    let _ = self.try_add_any_component(entity, event.component);
-                } else {
+                if let Some(event) = event {
                     self.launch_event_systems(event);
                 }
-
-                // TODO: manage other events 'TryBatch, TrySet'
             }
 
             self.launch_tick_systems(delta_time);
@@ -376,6 +362,106 @@ impl Application {
         }
 
         self.events.append(&mut world.events);
+    }
+
+    /// Process the event if it's an application event.
+    ///
+    /// # Arguments
+    ///
+    /// * `event` - The event to be processed.
+    ///
+    /// # Returns
+    ///
+    /// Returns the event if the application did not process it.
+
+    fn process_event(&mut self, event: Box<dyn AnyEvent>) -> (bool, Option<Box<dyn AnyEvent>>) {
+        if event.id() == basic::events::CloseApplication::event_id() {
+            return (true, None);
+        }
+
+        if event.id() == basic::events::ModeratorCloseApplication::event_id() {
+            return (true, None);
+        }
+
+        if event.id() == basic::events::TryAddComponent::event_id() {
+            let event = event.into_any().downcast::<basic::events::TryAddComponent>().unwrap();
+
+            let entity = event.entity;
+            let component_id = event.component.id();
+
+            if let Err(_) = self.try_add_any_component(entity, event.component) {
+                log::warn!("Failed to add component {} to entity {}", component_id, entity);
+            }
+
+            return (false, None);
+        }
+
+        if event.id() == basic::events::TryAddComponentBatch::event_id() {
+            let event = event.into_any().downcast::<basic::events::TryAddComponentBatch>().unwrap();
+
+            let batch = event.batch;
+            let components = event.components;
+
+            if let Err(_) = self.try_add_any_component_batch(batch, components) {
+                log::warn!("Failed to add components to batch {:?}", batch);
+            }
+
+            return (false, None);
+        }
+
+        if event.id() == basic::events::TryAddComponentSet::event_id() {
+            let event = event.into_any().downcast::<basic::events::TryAddComponentSet>().unwrap();
+
+            let set = event.entities;
+            let components = event.components;
+
+            if let Err(_) = self.try_add_any_component_set(&set, components) {
+                log::warn!("Failed to add components to set {:?}", set);
+            }
+
+            return (false, None);
+        }
+
+        if event.id() == basic::events::TryRemoveComponent::event_id() {
+            if let Some(event) = event.as_any().downcast_ref::<basic::events::TryRemoveComponent>() {
+                let entity = event.entity;
+                let component_id = event.component_id;
+
+                if let Err(_) = self.try_remove_any_component(entity, component_id) {
+                    log::warn!("Failed to remove component {} from entity {}", component_id, entity);
+                }
+
+                return (false, None);
+            }
+        }
+
+        if event.id() == basic::events::TryRemoveComponentBatch::event_id() {
+            if let Some(event) = event.as_any().downcast_ref::<basic::events::TryRemoveComponentBatch>() {
+                let batch = event.batch;
+                let component_id = event.component_id;
+
+                if let Err(_) = self.try_remove_any_component_batch(batch, component_id) {
+                    log::warn!("Failed to remove component {} from batch {:?}", component_id, batch);
+                }
+
+                return (false, None);
+            }
+        }
+
+        if event.id() == basic::events::TryRemoveComponentSet::event_id() {
+            if let Some(event) = event.as_any().downcast_ref::<basic::events::TryRemoveComponentSet>() {
+                let set = &event.entities;
+                let component_id = event.component_id;
+
+                if let Err(_) = self.try_remove_any_component_set(set, component_id) {
+                    log::warn!("Failed to remove component {} from set {:?}", component_id, set);
+                }
+
+                return (false, None);
+            }
+        }
+
+        return (false, Some(event));
     }
 }
 
