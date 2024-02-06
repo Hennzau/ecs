@@ -1,9 +1,5 @@
-/// This example shows how to use the ECS and how memory is mapped.
-///
-/// The principle of this example is to understand how memory can be mapped. The example consists in adding
-/// component A to every entity that have a even index, component B to every entity that have a multiple of 3 and
-/// component C to every entity that have a multiple of 4. Then, every entity that have a multiple of 8 will be removed
-/// from component A and C.
+extern crate hnz;
+extern crate simple_logger;
 
 use simple_logger::SimpleLogger;
 

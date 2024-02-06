@@ -1,3 +1,6 @@
+extern crate hnz;
+extern crate simple_logger;
+
 use simple_logger::SimpleLogger;
 
 use hnz::ecs::prelude::*;
