@@ -31,22 +31,33 @@ struct Position3Df32 {
 	z: f32
 }
 
-impl hnz::ecs::component::ComponentTrait for Position3Df32 {
-	fn id() -> u64 {  
-		use std::{  
-			collections::hash_map::DefaultHasher,  
-			hash::{  
-				Hash,  
-				Hasher  
-			}  
-		};  
-
-		let id_str = std::any::type_name::<Self>();  
-		let mut hasher = DefaultHasher::new();  
-
-		id_str.hash(&mut hasher);  
-
-		hasher.finish()  
-	}
+impl AnyComponent for Position3Df32 {
+    fn id(&self) -> ComponentID {
+        let hasher = RandomState::with_seed(0);
+    
+        let id_str = std::any::type_name::<Self>();
+    
+        return hasher.hash_one(id_str);
+    }
+    
+    fn component_id() -> ComponentID {
+        let hasher = RandomState::with_seed(0);
+    
+        let id_str = std::any::type_name::<Self>();
+    
+        return hasher.hash_one(id_str);
+    }
+    
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        return self as &mut dyn std::any::Any;
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        return self as &dyn std::any::Any;
+    }
+    
+    fn into_any (self: Box<Self>) -> Box<dyn std::any::Any> {
+        return self;
+    }
 }
 ```
