@@ -7,7 +7,7 @@ use hnz::ecs::prelude::*;
 
 use hnz::physics::maths::{
     Position2Di32,
-    Scale2Du32
+    Scale2Du32,
 };
 
 use hnz::wsh::window::{
@@ -20,10 +20,10 @@ fn main() {
 
     let mut builder = ApplicationBuilder::new();
 
-    builder.add_system(WindowController::new(), vec![
+    builder.add_system(WindowController::new(), SystemBuilder::mix_types(&[
         SystemType::JOIN,
         SystemType::TICK,
-    ].into_iter().collect());
+    ]));
 
     let mut app = builder.build();
 

@@ -154,9 +154,9 @@ pub mod systems {
         /// # Returns
         ///
         /// Returns a new instance of the CloseApplication system. This instance is wrapped
-        /// with a `Rc::<RefCell<dyn System>>` that is typed as `CustomSystem`, using [`SystemBuilder::new`] function
+        /// with a `Rc::<RefCell<dyn System>>` that is typed as `CustomSystem`, using [`SystemBuilder::create_system`] function
         pub fn new() -> CustomSystem {
-            return SystemBuilder::new(Self {
+            return SystemBuilder::create_system(Self {
                 time: 0.0
             });
         }

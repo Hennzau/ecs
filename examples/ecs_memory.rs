@@ -27,7 +27,7 @@ pub mod systems {
 
     impl System for A {
         fn components(&self) -> AHashSet<ComponentID> {
-            return vec![components::A::component_id()].into_iter().collect();
+            return SystemBuilder::track_components(&[components::A::component_id()]);
         }
     }
 
@@ -35,7 +35,7 @@ pub mod systems {
 
     impl System for B {
         fn components(&self) -> AHashSet<ComponentID> {
-            return vec![components::B::component_id()].into_iter().collect();
+            return SystemBuilder::track_components(&[components::B::component_id()]);
         }
     }
 
@@ -43,7 +43,7 @@ pub mod systems {
 
     impl System for C {
         fn components(&self) -> AHashSet<ComponentID> {
-            return vec![components::C::component_id()].into_iter().collect();
+            return SystemBuilder::track_components(&[components::C::component_id()]);
         }
     }
 
@@ -51,7 +51,7 @@ pub mod systems {
 
     impl System for AB {
         fn components(&self) -> AHashSet<ComponentID> {
-            return vec![components::A::component_id(), components::B::component_id()].into_iter().collect();
+            return SystemBuilder::track_components(&[components::A::component_id(), components::B::component_id()]);
         }
     }
 
@@ -59,7 +59,7 @@ pub mod systems {
 
     impl System for AC {
         fn components(&self) -> AHashSet<ComponentID> {
-            return vec![components::A::component_id(), components::C::component_id()].into_iter().collect();
+            return SystemBuilder::track_components(&[components::A::component_id(), components::C::component_id()]);
         }
     }
 
@@ -67,7 +67,7 @@ pub mod systems {
 
     impl System for BC {
         fn components(&self) -> AHashSet<ComponentID> {
-            return vec![components::B::component_id(), components::C::component_id()].into_iter().collect();
+            return SystemBuilder::track_components(&[components::B::component_id(), components::C::component_id()]);
         }
     }
 
@@ -75,7 +75,7 @@ pub mod systems {
 
     impl System for ABC {
         fn components(&self) -> AHashSet<ComponentID> {
-            return vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect();
+            return SystemBuilder::track_components(&[components::A::component_id(), components::B::component_id(), components::C::component_id()]);
         }
     }
 }
@@ -85,16 +85,16 @@ fn main() {
 
     let mut builder = ApplicationBuilder::new();
     builder.add_systems(vec![
-        SystemBuilder::new(systems::A {}),
-        SystemBuilder::new(systems::B {}),
-        SystemBuilder::new(systems::C {}),
-        SystemBuilder::new(systems::AB {}),
-        SystemBuilder::new(systems::AC {}),
-        SystemBuilder::new(systems::BC {}),
-        SystemBuilder::new(systems::ABC {}),
-    ], vec![
+        SystemBuilder::create_system(systems::A {}),
+        SystemBuilder::create_system(systems::B {}),
+        SystemBuilder::create_system(systems::C {}),
+        SystemBuilder::create_system(systems::AB {}),
+        SystemBuilder::create_system(systems::AC {}),
+        SystemBuilder::create_system(systems::BC {}),
+        SystemBuilder::create_system(systems::ABC {}),
+    ], SystemBuilder::mix_types(&[
         SystemType::JOIN
-    ].into_iter().collect());
+    ]));
 
     let mut app = builder.build();
 

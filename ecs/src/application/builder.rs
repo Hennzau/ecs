@@ -30,7 +30,7 @@ pub struct ApplicationBuilder {
 }
 
 /// Enum representing different types of systems.
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub enum SystemType {
     /// System type for handling entity join events.
     JOIN,
@@ -127,7 +127,7 @@ impl ApplicationBuilder {
     ///
     /// impl TestSystem {
     ///     pub fn new () -> CustomSystem {
-    ///         return SystemBuilder::new(Self {});
+    ///         return SystemBuilder::create_system(Self {});
     ///     }
     /// }
     ///
@@ -158,7 +158,7 @@ impl ApplicationBuilder {
     ///
     /// impl TestSystem {
     ///     pub fn new () -> CustomSystem {
-    ///         return SystemBuilder::new(Self {});
+    ///         return SystemBuilder::create_system(Self {});
     ///     }
     /// }
     ///
@@ -204,7 +204,7 @@ impl ApplicationBuilder {
     ///
     /// impl TestSystem {
     ///     pub fn new () -> CustomSystem {
-    ///         return SystemBuilder::new(Self {});
+    ///         return SystemBuilder::create_system(Self {});
     ///     }
     /// }
     ///

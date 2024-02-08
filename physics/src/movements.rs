@@ -6,7 +6,7 @@ pub struct Movementf32 {}
 
 impl System for Movementf32 {
     fn components(&self) -> AHashSet<ComponentID> {
-        return vec![maths::Position2Df32::component_id(), maths::Velocity2Df32::component_id()].into_iter().collect();
+        return SystemBuilder::track_components(&[maths::Position2Df32::component_id(), maths::Velocity2Df32::component_id()]);
     }
 
     fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
@@ -29,7 +29,7 @@ pub struct Movementi32 {}
 
 impl System for Movementi32 {
     fn components(&self) -> AHashSet<ComponentID> {
-        return vec![maths::Position2Di32::component_id(), maths::Velocity2Di32::component_id()].into_iter().collect();
+        return SystemBuilder::track_components(&[maths::Position2Di32::component_id(), maths::Velocity2Di32::component_id()]);
     }
 
     fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {

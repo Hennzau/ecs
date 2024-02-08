@@ -35,7 +35,7 @@ pub struct WindowController {
 
 impl WindowController {
     pub fn new() -> CustomSystem {
-        return SystemBuilder::new(Self {
+        return SystemBuilder::create_system(Self {
             event_loop: WinitEventLoop::new().unwrap(),
         });
     }
@@ -43,11 +43,11 @@ impl WindowController {
 
 impl System for WindowController {
     fn components(&self) -> AHashSet<ComponentID> {
-        return vec![
+        return SystemBuilder::track_components(&[
             Window::component_id(),
             Position2Di32::component_id(),
             Scale2Du32::component_id(),
-        ].into_iter().collect();
+        ]);
     }
 
     /// This function is called when an entity joins this system.
