@@ -1,7 +1,4 @@
 extern crate hnz;
-extern crate simple_logger;
-
-use simple_logger::SimpleLogger;
 
 use hnz::ecs::prelude::*;
 
@@ -81,8 +78,6 @@ pub mod systems {
 }
 
 fn main() {
-    SimpleLogger::new().init().unwrap();
-
     let mut builder = ApplicationBuilder::new();
     builder.add_systems(vec![
         SystemBuilder::create_system(systems::A {}),

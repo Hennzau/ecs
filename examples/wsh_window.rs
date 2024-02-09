@@ -1,7 +1,4 @@
 extern crate hnz;
-extern crate simple_logger;
-
-use simple_logger::SimpleLogger;
 
 use hnz::ecs::prelude::*;
 
@@ -16,8 +13,6 @@ use hnz::wsh::window::{
 };
 
 fn main() {
-    SimpleLogger::new().init().unwrap();
-
     let mut builder = ApplicationBuilder::new();
 
     builder.add_system(WindowController::new(), SystemBuilder::mix_types(&[

@@ -10,6 +10,3 @@ description = "hnz development repository"
 ecs = { path = "ecs" }
 wsh = { path = "wsh" }
 physics = { path = "physics" }
-
-[dev-dependencies]
-simple_logger = "4.3.0"
