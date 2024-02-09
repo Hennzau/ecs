@@ -10,9 +10,10 @@ use crate::core::{
 pub struct Entities {
     /// This is the 'packed/dense' array containing all entities. It comprises multiple contiguous Entity storages,
     /// each associated with a distinct "main group" defined in the mapping. An example of such a storage could be:
-    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-    /// | 2 | 4 | 1 | 7 | 8 | 9 | 3 | 10| 12| 11| 13| 5 | 6 | 14|
-    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    ///
+    ///     |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    ///     | 2 | 4 | 1 | 7 | 8 | 9 | 3 | 10| 12| 11| 13| 5 | 6 | 14|
+    ///     |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
     /// Here, each integer serves as a unique identifier referencing an entity.
     entities: Vec<Vec<Entity>>,
 
@@ -22,11 +23,11 @@ pub struct Entities {
     ///
     /// Each `Vec<usize>` of this array can be seen as a vector of 'cursors' for various nested groups :
     ///
-    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-    /// | 2 | 4 | 1 | 7 | 8 | 9 | 3 | 10| 12| 11| 13| 5 | 6 | 14|
-    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-    /// | - | - | - |ABC| - | - | - | - | AB| - | - | - | - | - | A |
-    /// |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    ///     |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    ///     | 2 | 4 | 1 | 7 | 8 | 9 | 3 | 10| 12| 11| 13| 5 | 6 | 14|
+    ///     |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+    ///     | - | - | - |ABC| - | - | - | - | AB| - | - | - | - | - | A |
+    ///     |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
     groups: Vec<Vec<usize>>,
 
     /// This 'indices' array provides a way to track entities of a group inside de 'packed/dense' array

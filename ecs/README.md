@@ -8,7 +8,7 @@ You can see some examples of how to use the ECS in the examples in the directory
 
 ## Memory
 
-The [memory](https://github.com/Hennzau/hnz/blob/main/ecs/memory) section of this crate offers a method to map a entity storage for the purpose of maintaining
+The [memory](https://github.com/Hennzau/hnz/blob/main/ecs/src/memory) section of this crate offers a method to map a entity storage for the purpose of maintaining
 sorted elements.
 
 The concept involves organizing entities into multiple vectors to monitor those that possess specific combinations of
@@ -48,7 +48,7 @@ In this example, there is 5 groups that are sorted in 2 *nested* storages:
 As you can see, entities '1', '2', '3', '4' and '9' are duplicated (they are in both storages). The main purpose of our
 memory system is to minimize the amount of *nested* storages required to maintain a set of entities in order to avoid
 duplication of entities. This minimization is achieved by solving a maximum matching problem using the Hopcroft-Karp algorithm
-in [mapping.rs](https://github.com/Hennzau/hnz/blob/main/ecs/memory/mapping.rs).
+in [mapping.rs](https://github.com/Hennzau/hnz/blob/main/ecs/src/memory/mapping.rs).
 
 Our memory system is then designed to provide a fast way to access entities that possess a specific set of components. It contains
 a mapping system that allows to access in which storage the groups are located and where the cursors are located. It then gives
@@ -56,4 +56,4 @@ a slice of the entities that are in the wanted group.
 
 ## Application
 
-The [application](https://github.com/Hennzau/hnz/blob/main/ecs/application.rs) 
+The [application](https://github.com/Hennzau/hnz/blob/main/ecs/src/application.rs) 
