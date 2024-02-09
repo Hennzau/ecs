@@ -4,7 +4,18 @@ The main purpose of this crate is to provide a simple and efficient way to imple
 Our ECS is designed to minimize the amout of storages required to maintain a set of entities, while providing a fast way to
 access entities that possess a specific set of components.
 
-You can see some examples of how to use the ECS in the examples in the directory [examples](https://github.com/Hennzau/hnz/blob/main/examples/).
+You can see some examples of how to use the ECS in the examples in the directory [examples](https://github.com/Hennzau/hnz/blob/main/examples/). This directory contains the
+following examples:
+
+  - ``ecs_memory``: shows how internal memory is managed by the ECS.
+  - ``ecs_systems``: shows how to use custom systems for your application.
+  - ``ecs_events``: show how to combine custom systems and custom events in your application.
+
+Each example can be run by executing the following command:
+
+````cargo run --example 'ecs_memory'```` where ``'ecs_memory'`` can be replaced by any other example.
+
+There is also an ``ecs_benchmark`` example.
 
 ## Memory
 

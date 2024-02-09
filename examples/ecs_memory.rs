@@ -124,14 +124,6 @@ fn main() {
 
     let _ = app.set_bundle(entities_8).remove_component::<components::A>().remove_component::<components::C>().try_build();
 
-    println!("A: {}", components::A::component_id());
-    println!("B: {}", components::B::component_id());
-    println!("C: {}", components::C::component_id());
-    println!("AB: {}", group_id(&vec![components::A::component_id(), components::B::component_id()].into_iter().collect()));
-    println!("AC: {}", group_id(&vec![components::A::component_id(), components::C::component_id()].into_iter().collect()));
-    println!("BC: {}", group_id(&vec![components::B::component_id(), components::C::component_id()].into_iter().collect()));
-    println!("ABC: {}", group_id(&vec![components::A::component_id(), components::B::component_id(), components::C::component_id()].into_iter().collect()));
-
     println!("Entities:\n====================");
 
     for entities in app.entities() {
