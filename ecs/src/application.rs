@@ -215,7 +215,6 @@ impl Application {
     ///
     /// let mut application = ApplicationBuilder::new().build();
     ///
-    /// // Spawn a batch of entities and get the ID of the first entity and the total number of entities spawned.
     /// let entities = application.spawn_set(50);
     ///
     /// assert!(entities.len() == 50);
@@ -229,6 +228,93 @@ impl Application {
         }
 
         return entities;
+    }
+
+    /// Destroy a single entity
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - The entity to destroy
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    ///
+    /// let entity = application.spawn();
+    ///
+    /// application.destroy(entity);
+    /// ```
+
+    pub fn destroy(&mut self, entity: Entity) {
+        if let Some(components) = self.components_tracker.remove(&entity) {
+            for component in components.iter().cloned() {
+                let _ = self.components.try_remove_any_component(entity, component);
+            }
+
+            let groups = self.mapping.get_next_membership(&AHashSet::new(), &components);
+            let _ = self.entities.try_remove_groups_to_entity(&groups, entity);
+        }
+    }
+
+    /// Destroy a batch
+    ///
+    /// # Arguments
+    ///
+    /// * `batch` - The batch to destroy.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    ///
+    /// let batch = application.spawn_batch(50);
+    ///
+    /// application.destroy_batch(batch);
+    /// ```
+
+    pub fn destroy_batch(&mut self, batch: (Entity, usize)) {
+        let (leader, amount) = batch;
+        if let Some(components) = self.components_tracker.remove(&leader) {
+            for entity in leader..(leader + amount as Entity) {
+                for component in components.iter().cloned() {
+                    let _ = self.components.try_remove_any_component(entity, component);
+                }
+            }
+
+            let groups = self.mapping.get_next_membership(&AHashSet::new(), &components);
+            let entities = (leader..(leader + amount as u64)).collect::<Vec<Entity>>();
+
+            let _ = self.entities.try_remove_groups_to_entities(&groups, &entities);
+        }
+    }
+
+    /// Destroy a set of entities
+    ///
+    /// # Arguments
+    ///
+    /// * `entities` - The set of entities to destroy.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ecs::prelude::*;
+    ///
+    /// let mut application = ApplicationBuilder::new().build();
+    ///
+    /// let entities = application.spawn_set(50);
+    ///
+    /// application.destroy_set(&entities);
+    /// ```
+
+    pub fn destroy_set(&mut self, entities: &[Entity]) {
+        for entity in entities {
+            self.destroy(entity.clone());
+        }
     }
 
     /// Runs the application loop with a specified maximum rate for tick systems.
