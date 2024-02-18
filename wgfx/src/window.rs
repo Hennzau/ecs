@@ -45,11 +45,16 @@ impl WindowController {
 
 impl System for WindowController {
     fn components(&self) -> AHashSet<ComponentID> {
-        return SystemBuilder::track_components(&[
+        return SystemBuilder::focus_on(&[
             Window::component_id(),
             Position::component_id(),
             Scale::component_id(),
         ]);
+    }
+
+
+    fn types(&self) -> AHashSet<SystemType> {
+        return SystemBuilder::executed_on(&[SystemType::JOIN, SystemType::QUIT, SystemType::TICK]);
     }
 
     fn on_join(&mut self, entities: &[Entity], world: &mut World) {

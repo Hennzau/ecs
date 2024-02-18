@@ -142,6 +142,7 @@ pub mod systems {
         },
     };
     use crate::prelude::basic::components::Moderator;
+    use crate::prelude::SystemType;
 
     /// This system identifies if a moderator with a time duration should close the application
     pub struct CloseApplication {
@@ -164,10 +165,14 @@ pub mod systems {
 
     impl System for CloseApplication {
         fn components(&self) -> AHashSet<ComponentID> {
-            return vec![
+            return SystemBuilder::focus_on(&[
                 Duration::component_id(),
                 Moderator::component_id(),
-            ].into_iter().collect();
+            ]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
         /// Handles the system logic on each tick of the game loop. It identifies if there is only one moderator
         /// for the running application and if it owns a Duration component. In those cases, the application

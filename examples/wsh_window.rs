@@ -15,7 +15,7 @@ use hnz::wsh::window::{
 fn main() {
     let mut builder = ApplicationBuilder::new();
 
-    builder.add_system(WindowController::new(), SystemBuilder::mix_types(&[
+    builder.add_system(WindowController::new(), SystemBuilder::executed_on(&[
         SystemType::JOIN,
         SystemType::TICK,
     ]));

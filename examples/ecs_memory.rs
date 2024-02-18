@@ -24,7 +24,11 @@ pub mod systems {
 
     impl System for A {
         fn components(&self) -> AHashSet<ComponentID> {
-            return SystemBuilder::track_components(&[components::A::component_id()]);
+            return SystemBuilder::focus_on(&[components::A::component_id()]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
     }
 
@@ -32,7 +36,11 @@ pub mod systems {
 
     impl System for B {
         fn components(&self) -> AHashSet<ComponentID> {
-            return SystemBuilder::track_components(&[components::B::component_id()]);
+            return SystemBuilder::focus_on(&[components::B::component_id()]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
     }
 
@@ -40,7 +48,11 @@ pub mod systems {
 
     impl System for C {
         fn components(&self) -> AHashSet<ComponentID> {
-            return SystemBuilder::track_components(&[components::C::component_id()]);
+            return SystemBuilder::focus_on(&[components::C::component_id()]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
     }
 
@@ -48,7 +60,11 @@ pub mod systems {
 
     impl System for AB {
         fn components(&self) -> AHashSet<ComponentID> {
-            return SystemBuilder::track_components(&[components::A::component_id(), components::B::component_id()]);
+            return SystemBuilder::focus_on(&[components::A::component_id(), components::B::component_id()]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
     }
 
@@ -56,7 +72,11 @@ pub mod systems {
 
     impl System for AC {
         fn components(&self) -> AHashSet<ComponentID> {
-            return SystemBuilder::track_components(&[components::A::component_id(), components::C::component_id()]);
+            return SystemBuilder::focus_on(&[components::A::component_id(), components::C::component_id()]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
     }
 
@@ -64,7 +84,11 @@ pub mod systems {
 
     impl System for BC {
         fn components(&self) -> AHashSet<ComponentID> {
-            return SystemBuilder::track_components(&[components::B::component_id(), components::C::component_id()]);
+            return SystemBuilder::focus_on(&[components::B::component_id(), components::C::component_id()]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
     }
 
@@ -72,7 +96,11 @@ pub mod systems {
 
     impl System for ABC {
         fn components(&self) -> AHashSet<ComponentID> {
-            return SystemBuilder::track_components(&[components::A::component_id(), components::B::component_id(), components::C::component_id()]);
+            return SystemBuilder::focus_on(&[components::A::component_id(), components::B::component_id(), components::C::component_id()]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
     }
 }
@@ -87,9 +115,7 @@ fn main() {
         SystemBuilder::create_system(systems::AC {}),
         SystemBuilder::create_system(systems::BC {}),
         SystemBuilder::create_system(systems::ABC {}),
-    ], SystemBuilder::mix_types(&[
-        SystemType::JOIN
-    ]));
+    ]);
 
     let mut app = builder.build();
 

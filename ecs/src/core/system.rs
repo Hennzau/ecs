@@ -13,9 +13,24 @@ use crate::core::{
     },
     entity::Entity,
     world::World,
-    event::AnyEvent,
+    event::{
+        AnyEvent,
+        EventID,
+    },
 };
-use crate::prelude::SystemType;
+
+/// Enum representing different types of systems.
+#[derive(Clone, Eq, Hash, PartialEq)]
+pub enum SystemType {
+    /// System type for handling entity join events.
+    JOIN,
+    /// System type for handling entity quit events.
+    QUIT,
+    /// System type for handling tick events.
+    TICK,
+    /// System type for handling custom events with specified `EventID`.
+    EVENT(EventID),
+}
 
 /// A SharedSystem is a system that is intended to be used for multiple application functions (on_join, on_tick etc...)
 /// and that needs to communicate data from its functions.
@@ -85,7 +100,7 @@ impl SystemBuilder {
     ///
     /// impl System for TestSystem {
     ///     fn components(&self) -> AHashSet<ComponentID> {
-    ///         return SystemBuilder::track_components(&[
+    ///         return SystemBuilder::focus_on(&[
     ///             Position::component_id(),
     ///             Velocity::component_id()
     ///         ]);
@@ -100,7 +115,7 @@ impl SystemBuilder {
     ///
     /// ```
 
-    pub fn track_components(components: &[ComponentID]) -> AHashSet<ComponentID> {
+    pub fn focus_on(components: &[ComponentID]) -> AHashSet<ComponentID> {
         return components.into_iter().cloned().collect();
     }
 
@@ -129,10 +144,14 @@ impl SystemBuilder {
     ///
     /// impl System for TestSystem {
     ///     fn components(&self) -> AHashSet<ComponentID> {
-    ///         return SystemBuilder::track_components(&[
+    ///         return SystemBuilder::focus_on(&[
     ///             Position::component_id(),
     ///             Velocity::component_id()
     ///         ]);
+    ///     }
+    ///
+    ///     fn types(&self) -> AHashSet<ComponentID> {
+    ///         return SystemBuilder::executed_on(&[SystemType::JOIN, SystemType::QUIT]);
     ///     }
     /// }
     ///
@@ -143,11 +162,11 @@ impl SystemBuilder {
     /// }
     ///
     /// let builder = ApplicationBuilder::new();
-    /// builder.add_system(TestSystem::new(), SystemBuilder::mix_types(&[SystemType::JOIN, SystemType::QUIT]));
+    /// builder.add_system(TestSystem::new());
     ///
     /// ```
 
-    pub fn mix_types (types: &[SystemType]) -> AHashSet<SystemType> {
+    pub fn executed_on(types: &[SystemType]) -> AHashSet<SystemType> {
         return types.into_iter().cloned().collect();
     }
 }
@@ -163,8 +182,16 @@ pub trait System {
     /// # Example
     ///
     /// See [`crate::application::basic::systems::CloseApplication::components`]
-    ///
+
     fn components(&self) -> AHashSet<ComponentID>;
+
+    /// This function provides a way to know which types each system are.
+    ///
+    /// # Returns
+    ///
+    /// Returns a hash set (`AHashSet`) of `Types`.
+
+    fn types(&self) -> AHashSet<SystemType>;
 
     /// Each system belongs to a certain group. Every system that uses the same set of components
     /// are in the same group.
@@ -172,6 +199,7 @@ pub trait System {
     /// # Returns
     ///
     /// Returns a `Group` instance representing the group to which the system belongs based on its set of components.
+
     fn group(&self) -> Group {
         component::group_id(&self.components())
     }

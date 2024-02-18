@@ -27,6 +27,7 @@ pub mod prelude {
                 CustomSystem,
                 System,
                 SystemBuilder,
+                SystemType
             },
             world::World,
             event::{
@@ -37,10 +38,7 @@ pub mod prelude {
         },
         application::{
             Application,
-            builder::{
-                ApplicationBuilder,
-                SystemType
-            },
+            builder::ApplicationBuilder,
             basic,
             bundle::{
                 Bundle,

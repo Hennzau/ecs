@@ -36,10 +36,14 @@ pub mod systems {
 
     impl System for Movement {
         fn components(&self) -> AHashSet<ComponentID> {
-            return SystemBuilder::track_components(&[
+            return SystemBuilder::focus_on(&[
                 Position2Df32::component_id(),
                 Velocity2Df32::component_id(),
             ]);
+        }
+
+        fn types(&self) -> AHashSet<SystemType> {
+            return SystemBuilder::executed_on(&[SystemType::TICK]);
         }
 
         fn on_tick(&mut self, delta_time: f32, entities: &[Entity], world: &mut World) {
@@ -63,8 +67,7 @@ fn main() {
     let mut builder = ApplicationBuilder::new();
     builder.add_systems(vec![
         basic::systems::CloseApplication::new(),
-        systems::Movement::new(),
-    ], SystemBuilder::mix_types(&[SystemType::TICK]));
+        systems::Movement::new()]);
 
     let mut app = builder.build();
 

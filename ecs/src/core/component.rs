@@ -7,11 +7,9 @@ use ahash::{
 
 pub use ecs_macros::Component;
 
-/// In ECS paradigms everything can be seen as a unique identifier
 pub type ComponentID = u64;
 pub type Group = u64;
 
-/// General trait that must be implemented for structs that must be understand as Component
 /// The user doesn't have to manipulate this trait, everything is handled by the ECS crate and the
 /// proc macro [derive(Component)]
 pub trait AnyComponent {
