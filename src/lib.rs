@@ -1,3 +1,3 @@
 pub use ecs;
-pub use wsh;
+pub use wgfx;
 pub use physics;

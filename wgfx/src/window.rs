@@ -8,9 +8,9 @@ use winit::{
     platform::pump_events::EventLoopExtPumpEvents,
 };
 
-use physics::maths::{
-    Position2Di32,
-    Scale2Du32,
+pub use physics::maths::{
+    Position2Di32 as Position,
+    Scale2Du32 as Scale,
 };
 
 type WinitWindow = winit::window::Window;
@@ -31,12 +31,14 @@ impl Window {
 
 pub struct WindowController {
     event_loop: WinitEventLoop,
+    count: usize,
 }
 
 impl WindowController {
     pub fn new() -> CustomSystem {
         return SystemBuilder::create_system(Self {
             event_loop: WinitEventLoop::new().unwrap(),
+            count: 0,
         });
     }
 }
@@ -45,17 +47,15 @@ impl System for WindowController {
     fn components(&self) -> AHashSet<ComponentID> {
         return SystemBuilder::track_components(&[
             Window::component_id(),
-            Position2Di32::component_id(),
-            Scale2Du32::component_id(),
+            Position::component_id(),
+            Scale::component_id(),
         ]);
     }
 
-    /// This function is called when an entity joins this system.
-
     fn on_join(&mut self, entities: &[Entity], world: &mut World) {
         for &entity in entities {
-            let position = world.try_get_component::<Position2Di32>(entity).unwrap().clone();
-            let scale = world.try_get_component::<Scale2Du32>(entity).unwrap().clone();
+            let position = world.try_get_component::<Position>(entity).unwrap().clone();
+            let scale = world.try_get_component::<Scale>(entity).unwrap().clone();
             let title = match world.try_get_component::<basic::components::Label>(entity) {
                 Some(label) => label.text.clone(),
                 None => entity.to_string(),
@@ -73,11 +73,23 @@ impl System for WindowController {
 
                 window.winit_window = builder.build(&self.event_loop).ok();
             }
+
+            self.count += 1;
+        }
+    }
+
+    fn on_quit(&mut self, entities: &[Entity], world: &mut World) {
+        for _ in 0..entities.len() {
+            self.count -= 1;
+
+            if self.count == 0 {
+                world.send_event(Box::new(basic::events::CloseApplication {}));
+            }
         }
     }
 
     fn on_tick(&mut self, _delta_time: f32, entities: &[Entity], world: &mut World) {
-        let status = self.event_loop.pump_events(Some(std::time::Duration::ZERO), |event, event_loop| {
+        let status = self.event_loop.pump_events(Some(std::time::Duration::ZERO), |event, _| {
             // Retrieve window event
             if let Event::WindowEvent { event, window_id } = event {
                 // Retrieve all entities and get the window component
@@ -94,10 +106,6 @@ impl System for WindowController {
                                         entity: entity,
                                         component_id: Window::component_id(),
                                     }));
-
-                                    if entities.len() == 1 {
-                                        event_loop.exit();
-                                    }
                                 }
                             }
                             _ => {}

@@ -251,11 +251,8 @@ impl Application {
     pub fn destroy(&mut self, entity: Entity) {
         if let Some(components) = self.components_tracker.remove(&entity) {
             for component in components.iter().cloned() {
-                let _ = self.components.try_remove_any_component(entity, component);
+                let _ = self.try_remove_any_component(entity, component);
             }
-
-            let groups = self.mapping.get_next_membership(&AHashSet::new(), &components);
-            let _ = self.entities.try_remove_groups_to_entity(&groups, entity);
         }
     }
 
@@ -280,16 +277,9 @@ impl Application {
     pub fn destroy_batch(&mut self, batch: (Entity, usize)) {
         let (leader, amount) = batch;
         if let Some(components) = self.components_tracker.remove(&leader) {
-            for entity in leader..(leader + amount as Entity) {
-                for component in components.iter().cloned() {
-                    let _ = self.components.try_remove_any_component(entity, component);
-                }
+            for component in components {
+                let _ = self.try_remove_any_component_batch((leader, amount), component);
             }
-
-            let groups = self.mapping.get_next_membership(&AHashSet::new(), &components);
-            let entities = (leader..(leader + amount as u64)).collect::<Vec<Entity>>();
-
-            let _ = self.entities.try_remove_groups_to_entities(&groups, &entities);
         }
     }
 
