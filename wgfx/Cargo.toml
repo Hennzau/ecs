@@ -11,3 +11,5 @@ log = "0.4.20"
 
 ecs = { path = "../ecs" }
 physics = { path = "../physics" }
+wgpu = "0.19.1"
+futures = "0.3.30"
