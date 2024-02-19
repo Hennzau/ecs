@@ -384,7 +384,7 @@ impl MemoryMapping {
     /// # Returns
     ///
     /// Returns `true` if a matching is found and updated, indicating that the algorithm should continue. Returns `false` if no matching is found, indicating completion.
-    
+
     fn compute_matching(vertex: Option<Group>, layer_one: &mut AHashMap<Group, Option<IGroup>>, layer_two: &mut AHashMap<IGroup, Option<Group>>, layer_one_neighbors: &AHashMap<Group, Vec<IGroup>>, distances: &mut AHashMap<Option<IGroup>, u64>) -> bool {
         if let Some(vertex) = vertex {
             if let Some(neighbors) = layer_one_neighbors.get(&vertex).cloned() {
