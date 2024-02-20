@@ -7,6 +7,4 @@ description = "hnz development repository"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ecs = { path = "ecs" }
-wgfx = { path = "wgfx" }
-physics = { path = "physics" }
+log = "0.4.20"
