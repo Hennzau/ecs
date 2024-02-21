@@ -1,3 +1,4 @@
+workspace = { members = ["macros"] }
 [package]
 name = "hnz"
 version = "0.1.0"
@@ -7,4 +8,6 @@ description = "hnz development repository"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+macros = { path = "macros" }
 log = "0.4.20"
+ahash = "0.8.9"
