@@ -3,7 +3,10 @@ use crate::ecs::{
         ArchetypeID,
         ComponentID,
     },
-    memory::storage::SparsePool,
+    memory::storage::{
+        SparsePool,
+        ColumnID,
+    },
 };
 
 pub struct Archetype {

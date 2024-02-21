@@ -1,4 +1,3 @@
-use std::any::Any;
 use crate::ecs::core::{
     entity,
     entity::{
@@ -77,6 +76,57 @@ impl SparsePool {
 
             return self.columns.get_mut(column).and_then(|components| {
                 return components.get_mut(entity_index);
+            });
+        });
+    }
+
+    pub fn register_entity(&mut self, entity: Entity, mut row: Vec<Box<dyn AnyComponent>>) {
+        if !self.contains(entity) {
+            let entity_index = self.entities.len();
+            self.entities.push(entity);
+
+            let key = entity::as_key(entity);
+            if self.sparse.len() <= key {
+                self.sparse.reserve(key + 100);
+                self.sparse.resize(key, NULL_ENTITY);
+                if let Some(index) = self.sparse.get_mut(key) {
+                    *index = entity_index;
+                }
+            }
+
+            for column in self.columns.iter_mut().rev() {
+                if let Some(pop) = row.pop() {
+                    column.push(pop);
+                }
+            }
+        }
+    }
+
+    pub fn unregister_entity(&mut self, entity: Entity) -> Option<Vec<Box<dyn AnyComponent>>> {
+        return self.sparse.get(entity::as_key(entity)).cloned().and_then(|entity_index| {
+            if entity_index == NULL_ENTITY {
+                return None;
+            }
+
+            return self.entities.last().cloned().and_then(|last_entity| {
+                let last_index = self.entities.len() - 1;
+
+                if let Some(last) = self.sparse.get_mut(entity::as_key(last_entity)) {
+                    *last = entity_index;
+                }
+
+                if let Some(current) = self.sparse.get_mut(entity::as_key(entity)) {
+                    *current = NULL_ENTITY;
+                }
+
+                self.entities.swap_remove(entity_index);
+                let mut result = Vec::new();
+
+                for column in &mut self.columns {
+                    result.push(column.swap_remove(entity_index));
+                }
+
+                return Some(result);
             });
         });
     }
