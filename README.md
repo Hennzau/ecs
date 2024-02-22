@@ -198,7 +198,7 @@ A l'étape (2), à l'entié 0 est ajouté le composant A. Le seul *sous-groupe i
 |          | Curseurs | C   |    |  |
 |          | Curseurs | AC  |    |  |
 
-A l'étape (3), à l'entié 0 est ajouté le composant B. Maintenant l'entité 0 est dans les *sous-groupes imbriquées* [A] et [A, B] du groupe 1. Et également [B] du groupe 2. On ajoute donc l'entité 0 à la liste des entitées du groupe 1 et du groupe 2 et on déplace les curseurs de la liste des entitées du groupe 1 et du groupe 2 pour qu'ils pointent sur la bonne entité.
+A l'étape (3), à l'entié 0 est ajouté le composant B. Maintenant l'entité 0 est dans les *sous-groupes imbriquées* [A] et [A, B] du groupe 1. Et également [B] du groupe 2. On ajoute donc l'entité 0 à la liste des entitées du groupe 2 et on déplace les curseurs de la liste des entitées du groupe 1 et du groupe 2 pour qu'ils pointent sur la bonne entité.
 
 | Groupe 1 | Entitées | 0   |     |  |
 |----------|----------|-----|-----|--|
@@ -212,7 +212,7 @@ A l'étape (3), à l'entié 0 est ajouté le composant B. Maintenant l'entité 0
 |          | Curseurs | C   |     |  |
 |          | Curseurs | AC  |     |  |
 
-A l'étape (4), à l'entié 0 est ajouté le composant C. Maintenant l'entité 0 est dans les *sous-groupes imbriquées* [A] et [A, B] et [A, B, C] du groupe 1. Et également [B] et [B, C] du groupe 2. Et également [C] et [A, C] du groupe 3. On ajoute donc l'entité 0 à la liste des entitées du groupe 1, du groupe 2 et du groupe 3 et on déplace les curseurs de la liste des entitées du groupe 1, du groupe 2 et du groupe 3 pour qu'ils pointent sur la bonne entité.
+A l'étape (4), à l'entié 0 est ajouté le composant C. Maintenant l'entité 0 est dans les *sous-groupes imbriquées* [A] et [A, B] et [A, B, C] du groupe 1. Et également [B] et [B, C] du groupe 2. Et également [C] et [A, C] du groupe 3. On ajoute donc l'entité 0 à la liste des entitées du groupe 3 et on déplace les curseurs de la liste des entitées du groupe 1, du groupe 2 et du groupe 3 pour qu'ils pointent sur la bonne entité.
 
 
 | Groupe 1 | Entitées | 0 |     |  |
@@ -243,7 +243,7 @@ A l'étape (6), à l'entié 1 est ajouté le composant A. Le seul *sous-groupe i
 |          | Curseurs |   | C   |   |
 |          | Curseurs |   | AC  |   |
 
-A l'étape (7), à l'entié 1 est ajouté le composant C. Maintenant l'entité 1 est dans les *sous-groupes imbriquées* [A] du groupe 1. Et également [C] et [A, C] du groupe 3. On ajoute donc l'entité 1 à la liste des entitées du groupe 1 et du groupe 3 et on déplace les curseurs de la liste des entitées du groupe 1 et du groupe 3 pour qu'ils pointent sur la bonne entité.
+A l'étape (7), à l'entié 1 est ajouté le composant C. Maintenant l'entité 1 est dans les *sous-groupes imbriquées* [A] du groupe 1. Et également [C] et [A, C] du groupe 3. On ajoute donc l'entité 1 à la liste des entitées du groupe 3 et on déplace les curseurs de la liste des entitées du groupe 1 et du groupe 3 pour qu'ils pointent sur la bonne entité.
 
 | Groupe 1 | Entitées | 0 | 1   |    |
 |----------|----------|---|-----|----|
@@ -272,3 +272,4 @@ Le fait que les données ne soient plus placée de manière unique dans un conte
 Cela réduit donc drastiquement le temps d'accès aux composants des entitées.
 
 C'est le fait que cette structure ne **possède** pas les instances des composants qu'elle est nommée **Non Owning Groups**.
+
