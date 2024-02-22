@@ -2,6 +2,7 @@ use crate::ecs::core::{
     entity,
     entity::{
         Entity,
+        EntityBatch,
         EntityIndex,
         NULL_ENTITY,
     },
@@ -129,5 +130,36 @@ impl SparsePool {
                 return Some(result);
             });
         });
+    }
+
+    pub fn register_batch(&mut self, (leader, queue, batch): EntityBatch, mut row: Vec<Vec<Box<dyn AnyComponent>>>) {
+        if !self.contains(leader) {
+            let entity_index = self.entities.len();
+            self.entities.extend_from_slice(&batch);
+
+            if self.sparse.len() <= entity::as_key(queue) {
+                self.sparse.reserve(entity::as_key(queue) + 100);
+                self.sparse.resize(entity::as_key(queue), NULL_ENTITY);
+
+                if let Some(indices) = self.sparse.get_mut(entity::as_key(leader)..entity::as_key(queue) + 1) {
+                    let mut i = 0 as EntityIndex;
+                    for index in indices {
+                        *index = entity_index + i;
+
+                        i += 1;
+                    }
+                }
+            }
+
+            for column in self.columns.iter_mut().rev() {
+                if let Some(mut pop) = row.pop() {
+                    column.append(&mut pop);
+                }
+            }
+        }
+    }
+
+    pub fn unregister_batch(&mut self, (leader, queue, batch): EntityBatch) -> Option<Vec<Vec<Box<dyn AnyComponent>>>> {
+        return None;
     }
 }

@@ -1,6 +1,6 @@
 pub type Entity = u64;
 
-pub type EntityBatch = (Entity, usize);
+pub type EntityBatch = (Entity, Entity, Vec<Entity>);
 
 pub type EntitySet = Vec<Entity>;
 
