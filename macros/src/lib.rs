@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 
 use syn::{
     parse_macro_input,
@@ -10,10 +10,11 @@ use syn::{
 pub fn derive_component(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
-    let name = &input.ident;
+    let component = &input.ident;
+    let pool = format_ident!("{}Pool", component);
 
     let expanded = quote! {
-        impl AnyComponent for #name {
+        impl AnyComponent for #component {
             fn id(&self) -> ComponentID {
                 let hasher = RandomState::with_seed(0);
 
@@ -36,10 +37,6 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
 
             fn as_any(&self) -> &dyn std::any::Any {
                 return self as &dyn std::any::Any;
-            }
-
-            fn into_any (self: Box<Self>) -> Box<dyn std::any::Any> {
-                return self;
             }
         }
     };
