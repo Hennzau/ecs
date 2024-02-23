@@ -1,4 +1,4 @@
-# Description des structures de données
+# Description des structures de données majoritairement utilisées dans les ECS
 
 L'objectif de ces structures de données est **toujours** de permettre un accès rapide à un ensemble d'entitées qui ont
 une certaine combinaison de composants. Il est également
@@ -312,6 +312,138 @@ map qui, à chaque entité, associe l'endroit dans lequel son instance de compos
 
 Cela réduit donc drastiquement le temps d'accès aux composants des entitées.
 
-C'est le fait que cette structure ne **possède** pas les instances des composants qu'elle est nommée **Non Owning Groups
-**.
+C'est le fait que cette structure ne **possède** pas les instances des composants qu'elle est nommée **Non Owning Groups**.
 
+## Full/Partial/Non Owning Groups
+
+### Complément de la structure de groupe
+
+Il est possible d'utiliser **en même temps** que les structures de groupes, des **pools** de composants qui gèrent les instances des composants pour chaque entité, pour chaque type de composant.
+A priori ces **pools** sont complètement indépendantes des structures internes des données des groupes.
+
+Ainsi, **en plus** des groupes précédents, on ajoute :
+
+- Une liste de *pools* de composants. Chaque pool est associée à un type de composant.
+- Une map qui associe à chaque entité, pour chaque composant, son emplacement dans la pool de ce composant.
+
+Ainsi un exemple de données type pour une application avec un groupe ([A], [A, B], [A, B, C]) (nommé *groupe 1*) pourrait ressembler à ceci:
+
+| **Groupe 1** |    |    |    |     |    |    |    |    |    |     |     |     |     |     |   |
+|--------------|----|----|----|-----|----|----|----|----|----|-----|-----|-----|-----|-----|---|
+| Entitées     | 2  | 4  | 1  | 7   | 8  | 9  | 3  | 10 | 12 | 11  | 13  | 5   | 6   | 14  |   |
+| Curseurs     |    |    |    | ABC |    |    |    |    | AB |     |     |     |     |     | A |
+
+| **Pools**    |    |    |    |    |    |    |    |     |    |     |     |     |     |     |
+|--------------|----|----|----|----|----|----|----|-----|----|-----|-----|-----|-----|-----|
+| A            | A1 | A2 | A3 | A4 | A5 | A6 | A7 | A8  | A9 | A10 | A11 | A12 | A13 | A14 |
+| B            | B1 | B2 | B3 | B4 | B7 | B8 | B9 | B10 |    |     |     |     |     |     |
+| C            | C1 | C2 | C4 |    |    |    |    |     |    |     |     |     |     |     |
+
+| **Map**       |   |   |   |   |   |   |   |   |   |    |    |    |    |    |
+|---------------|---|---|---|---|---|---|---|---|---|----|----|----|----|----|
+| Entitiées     | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+| A             | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9  | 10 | 11 | 12 | 13 |
+| B             | 0 | 1 | 2 | 3 |   |   | 4 | 5 | 6 | 7  |    |    |    |    |
+| C             | 0 | 1 |   | 2 |   |   |   |   |   |    |    |    |    |    |
+
+### Définition
+
+La nouvelle idée qui peut venir améliorer les points négatifs des Non Owning Groups, est de coupler chaque pool à un groupe en particulier.
+On entend par couplage, que l'ordre des entitées dans le groupe est le même que l'ordre des instances des composants dans la pool.
+
+Ainsi si l'on attache la pool de composant A au groupe 1, on peut être sûr que l'instance A2 de l'entité 2 se trouve à la même place que l'entité 2 dans le groupe 1, un exemple serait de disposer les données comme ceci:
+
+| **Groupe 1** |    |    |    |     |    |    |    |     |     |     |     |    |    |     |   |
+|--------------|----|----|----|-----|----|----|----|-----|-----|-----|-----|----|----|-----|---|
+| Entitées     | 2  | 4  | 1  | 7   | 8  | 9  | 3  | 10  | 12  | 11  | 13  | 5  | 6  | 14  |   |
+| Curseurs     |    |    |    | ABC |    |    |    |     | AB  |     |     |    |    |     | A |
+| **Pool A**   | A2 | A4 | A1 | A7  | A8 | A9 | A3 | A10 | A12 | A11 | A13 | A5 | A6 | A14 |
+
+| **Autres Pools** |    |    |    |    |    |    |    |     |    |     |     |     |     |     |
+|------------------|----|----|----|----|----|----|----|-----|----|-----|-----|-----|-----|-----|
+| B                | B1 | B2 | B3 | B4 | B7 | B8 | B9 | B10 |    |     |     |     |     |     |
+| C                | C1 | C2 | C4 |    |    |    |    |     |    |     |     |     |     |     |
+
+| **Map**       |   |   |   |   |    |    |   |   |   |    |    |    |    |    |
+|---------------|---|---|---|---|----|----|---|---|---|----|----|----|----|----|
+| Entitiées     | 1 | 2 | 3 | 4 | 5  | 6  | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+| A             | 2 | 0 | 6 | 1 | 11 | 12 | 3 | 4 | 5 | 7  | 9  | 8  | 10 | 13 |
+| B             | 0 | 1 | 2 | 3 |    |    | 4 | 5 | 6 | 7  |    |    |    |    |
+| C             | 0 | 1 |   | 2 |    |    |   |   |   |    |    |    |    |    |
+
+### Utilisation
+
+Désormais, lorsque l'utilisateur veut accéder à toutes les entitées qui ont le composant A, il peut simplement itérer sur sur les deux espaces contigues **Entitées** et **Pool A** du groupe 1.
+Tout sera bien ordonné.
+
+On peut égamement associé les pools B et C au groupe 1, et les coupler :
+
+| **Groupe 1** |    |    |    |     |    |    |    |     |     |     |     |     |      |      |   |
+|--------------|----|----|----|-----|----|----|----|-----|-----|-----|-----|-----|------|------|---|
+| Entitées     | 2  | 4  | 1  | 7   | 8  | 9  | 3  | 10  | 12  | 11  | 13  | 5   | 6    | 14   |   |
+| Curseurs     |    |    |    | ABC |    |    |    |     | AB  |     |     |     |      |      | A |
+| **Pool A**   | A2 | A4 | A1 | A7  | A8 | A9 | A3 | A10 | A12 | A11 | A13 | A5  | A6   | A14  |   |
+| **Pool B**   | B2 | B4 | B1 | B7  | B8 | B9 | B3 | B10 |     |     |     |     |      |      |   |
+| **Pool C**   | C2 | C4 | C1 |     |    |    |    |     |     |     |     |     |      |      |   |
+
+| **Map**       |   |   |   |   |    |    |   |   |   |    |    |    |    |    |
+|---------------|---|---|---|---|----|----|---|---|---|----|----|----|----|----|
+| Entitiées     | 1 | 2 | 3 | 4 | 5  | 6  | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+| A             | 2 | 0 | 6 | 1 | 11 | 12 | 3 | 4 | 5 | 7  | 9  | 8  | 10 | 13 |
+| B             | 2 | 0 | 6 | 1 |    |    | 3 | 4 | 5 | 7  |    |    |    |    |
+| C             | 2 | 0 |   | 1 |    |    |   |   |   |    |    |    |    |    |
+
+Ainsi si l'utilisateur souhaite accéder aux entitées qui ont les composants [A, B], il peut simplement itérer jusqu'au curseur correspondant les espaces contiguës **Entitées**, **Pool A** et **Pool B** du groupe 1.
+
+### Limites
+
+Ceci semble parfait, on peut désormais ordonner notre mémoire en accord avec les groupes afin que ces derniers possèdent les ressources. 
+
+Néanmoins l'exemple précédent est trop simple. Si l'on reprend un exemple où il y'a 3 groupes :
+
+- Le groupe 1 : ([A], [A, B], [A, B, C])
+- Le groupe 2 : ([B], [B, C])
+- Le groupe 3 : ([C], [A, C])
+
+Il n'est pas possible de coupler les trois pools avec les trois groupes en même temps. Il faut donc **choisir** les groupes avec lesquels on veut coupler les pools.
+
+#### Exemple 1
+
+Si l'on couple les trois pools avec le groupe 1 alors on aura les distinctions suivantes :
+
+- L'accès aux entitées du **sous-groupe imbriqué** [A] sera en **Full Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [A, B] sera en **Full Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [A, B, C] sera en **Full Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [B] sera en **Non Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [B, C] sera en **Non Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [C] sera en **Non Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [A, C] sera en **Non Owning**.
+
+Le terme **Non Owning** est utilisé ici pour signifier que l'accès aux entitées et aux **composants** se fait par accès à la MAP qui associe à chaque entité, pour chaque composant, son emplacement dans la pool de ce composant.
+C'est à dire qu'en itérant sur les entitées, on doit aller chercher dans la MAP le composant associé à chaque entité.
+
+Le terme **Full Owning** est utilisé ici pour signifier que l'accès aux entitées et aux **composants** se fait par itération sur les espaces contigues **Entitées** et **Pool** du groupe.
+C'est à dire qu'en itérant sur les entitées, on peut simplement itérer en parallèle et *zip* les deux itérations pour obtenir le composant correspondant à chaque entité
+
+#### Exemple 2
+
+Si l'on couple les pools A et B au groupe 1 et la pool C au groupe 3 alors on aura les distinctions suivantes :
+
+- L'accès aux entitées du **sous-groupe imbriqué** [A] sera en **Full Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [A, B] sera en **Full Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [A, B, C] sera en **Partial Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [B] sera en **Non Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [B, C] sera en **Non Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [C] sera en **Full Owning**.
+- L'accès aux entitées du **sous-groupe imbriqué** [A, C] sera en **Partial Owning**.
+
+Le terme **Partial Owning** est utilisé ici pour signifier que l'accès aux entitées et aux **composants** se fait en partie en itérant sur les espaces congitues **Entitées** et **Pool** du groupe et en partie par accès à la MAP qui associe à chaque entité, pour chaque composant, son emplacement dans la pool de ce composant.
+C'est à dire qu'en itérant sur les entitées, on peut itérer simplement en parallèle pour un composant et aller chercher dans la MAP le composant associé à chaque entité pour l'autre type de composant.
+
+### Avantages
+
+Il est clair qu'associé les pools aux groupes permet de résoudre à la fois les problèmes de fragmentation de la mémoire de la structure par Archétypes et permet un accès rapide à des combinaisons de composants.
+
+### Inconvénients
+
+Le gros défaut de ce système est qu'il n'est pas possible que chaque **sous-groupe imbriqué** soit en **Full Owning**. Il faut donc choisir intelligemment selon les besoins de l'application.
