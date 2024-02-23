@@ -1,4 +1,4 @@
-~~# Description des structures de données
+# Description des structures de données
 
 L'objectif de ces structures de données est **toujours** de permettre un accès rapide à un ensemble d'entitées qui ont
 une certaine combinaison de composants. Il est également
