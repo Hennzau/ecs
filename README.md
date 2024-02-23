@@ -16,12 +16,13 @@ Récapitulatif:
 
 Le cas typique d'utilisation est le suivant:
 
-```rust
-
-for (entity, position, velocity) in Query<Position, Velocity> () {
-println ! ("Entity {} has position {:?} and velocity {:?}", entity, position, velocity); position.x += velocity.x * dt; position.y += velocity.y * dt;
-}
-```
+  ```rust
+    for (entity, position, velocity) in Query<Position, Velocity> () {
+      println ! ("Entity {} has position {:?} and velocity {:?}", entity, position, velocity); 
+      position.x += velocity.x * dt; 
+      position.y += velocity.y * dt;
+    }
+  ```
 
 ## Archétypes
 
