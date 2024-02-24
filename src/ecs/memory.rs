@@ -1,2 +1,2 @@
 pub mod pool;
-pub mod group;
+pub mod linked_pools;

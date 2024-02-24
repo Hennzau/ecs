@@ -38,6 +38,14 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
             fn as_any(&self) -> &dyn std::any::Any {
                 return self as &dyn std::any::Any;
             }
+
+            fn into_any(self: Box<Self>) -> Box<dyn std::any::Any> {
+                return self;
+            }
+
+            fn into_box(self) -> Box<dyn AnyComponent> {
+                return Box::new(self);
+            }
         }
     };
 
