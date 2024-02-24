@@ -1,2 +1,1 @@
-pub mod pool;
-pub mod linked_pools;
+pub mod archetype_graph;
