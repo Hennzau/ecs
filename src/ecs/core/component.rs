@@ -1,4 +1,5 @@
 use std::any::Any;
+use ahash::AHashSet;
 
 pub use macros::Component;
 pub use ahash::RandomState;
@@ -21,5 +22,16 @@ pub trait AnyComponent {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
+}
 
+pub fn as_archetype(components: &AHashSet<ComponentID>) -> ArchetypeID {
+    let mut hasher = RandomState::with_seed(0);
+
+    let mut id = 0u128;
+
+    for component in components {
+        id += *component as u128;
+    }
+
+    return hasher.hash_one(id);
 }
